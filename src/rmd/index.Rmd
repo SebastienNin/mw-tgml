@@ -1,0 +1,85 @@
+---
+title: "mw-routine"
+author: "[Guillaume Charbonnier](https://guillaumecharbonnier.github.io/) and [Sebastien Nin](https://www.linkedin.com/in/s%C3%A9bastien-nin-280954a5/)"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+#bibliography: ["../../inp/library.bib"]
+#link-citations: true
+output:
+  bookdown::gitbook:
+    split_by: rmd
+    toc_depth: 5
+    download: ["epub", "mobi"]
+---
+
+Welcome to the Metaworkflow documentation for routine processing. It will help you to correctly use the `sequencing_summary.xlsx` spreadsheet to work with the Snakemake workflow deployed on Sacapus. Note this workflow is developed in parallel for *TGML users* and *Salvatore Spicuglia's Team*. Instructions specific to one or the other team are prefixed like this:
+
+* *TGML*: You can find the Sequencing_summary.xlsx file on netapp1 in the TGML folder.
+* *SST*: You can find the Sequencing_summary.xlsx file on Dropbox in the `/Commun Labo/Sequencing_TGML/Sequencing_summary.xlsx`. Please use Google Sheets to edit this file to avoid concurrency and compatibility issues. You can still read it while offline using Excel, LibreOffice or other tools.
+
+# Sequencing\_summary.xlsx description
+
+As a general rule, please avoid the use of the space ' ' when manually filling the Sequencing summary.
+
+## *samples* sheet
+
+Stores metadata related to a specific sample. It is currently the only table used by the workflow but this may change in the future.
+
+* `idx` : Index used to restore table to chronological state after ordering by other columns.
+* `sample_name` : The name of the prefix for the files after processing. As such, special characters like **spaces, '/' and '()' should be avoided** in this field. Also, all `sample_name` cells also have to be **unique** since some sample-related files have to be stored in common folders.
+    * *TGML*: You should not manually edit this column because `sample_name` consists of the automatic concatenation of `Sample_ID` and `Sample_name` separated by a "_".
+    * *SST*: You can manually adjust the `sample_name` column.
+* `control_name` : `sample_name` of control to use for ratio coverage and peak calling. Leave empty if control is irrelevant for sample.
+* `quantile_normalization_name` : sample\_name used as a reference for quantile normalization of bigwig.
+* `warning` : A manual warning any user interested in the related sample should know before going further.
+* `process` : Can take either `yes`, `done` or `no` value. In the routine usage, you should set `yes` when you need to process newly defined files, then switch them to `done` when all the processed files are available. Doing so reduces the computation time of the first part of workflow execution (DAG generation), so it is optional until someone has to debug the workflow. You can set `no` value when a sample definition is incomplete or leads to error. In this case, please fill the `warning` cell to informs other users of your reason.
+    * `yes` value means the sample configuration will be loaded by Snakemake and the related files will be produced.
+    * `done` value means the sample configuration will be loaded by Snakemake but the related files are not explicitly produced, meaning they will still be produced if required for another sample with `yes` value.
+    * `no` value, or empty cell, means the the line is not loaded by Snakemake.
+* `type` : Define the type of sample. The possible choices are listed in the `data_validation_lists` sheet of the `sequencing_summary.xlsx` file. This value will set the default processing steps applied to the input files for this sample. The value is also used as directory for processed files in some subtrees. Here are some instructions for specific library type.
+    * `combo-seq` only informational for now. As the project is closed, It may stay like this for a long time...
+    * `scRNA` processing of bcl from scRNA-seq experiment. It can also process cell hashing experiments! When selecting scRNA, put the origin to 'bcl' and do not forget to specify the X column 'Index_10X'.
+    * For all other `type` don't forget to check if you need fastq or bcl as input and to accord the origin and accession depending on your input.
+* *TGML*: `analysis_type` : Adjust the type of analyses to run. The possible choices are listed in the `data_validation_lists` sheet.
+    * `Concatenation_QC`: Use fastq files from the sequencer as input (check), produce concatenated fastq files and multiqc report. **When you want to run this analysis, put the origin column to "NS500_W10" and make the accession point to the fastq folder created by the sequencer (located in `/gpfs/tgml/reads/NS500_output_from_sept_2020/Run_folder/Alignment_1/Run_date/Fastq`).**
+    * `Demultiplexage_Concatenation_QC` Use bcl folder as input, run the sample demultiplexing, fastq file concatenation and multiqc report. When running this analysis, put the origin to bcl and make the accession point to the bcl folder of the run (located in `/gpfs/tgml/reads/NS500_output_from_sept_2020/`).
+    * `Demultiplexage_Concatenation_Quantification_QC` Use bcl folder as input, run the sample demultiplexing, fastq file concatenation, count table generation (for single-cell only for now), generate also the multiqc report. For now, put the origin to bcl and make the accession point to bcl folder of a run. Later, I'll add the possibility to process fastq file from sequencer.
+* `specie` : human;mouse. We can require for each specie the common assemblies (hg19/hg38; mm9/mm10) for which files will be generated. Or maybe replace this column with an assembly one where we explicitely ask the wanted assemblies.
+* `se_or_pe` : se for single-end reads; pe for paired-end reads. If you only see "\_R1\_" file for each sample, you are likely to have single-end reads.
+* `origin` : This value indicates the meaning of the `accession` next column
+    * *TMGL*:
+        * `bcl`: the accession will correspond to bcl folder of a run.
+        * `bcl_no_mismatch`: Select this if the samples must be demultiplexed without allowing barcode mismatches. **Use only** to resolve demultiplexing when the number of differences between barcodes is smaller than 2)
+        * `NextSeq500`: Use this one to process fastq files generated by the sequencer **before** the Windows 10 update.
+        * `NS500_W10`: Use this one to process fastq file generated by the sequencer **after** the Windows 10 update
+        * **Do not use the following:** `bcl_NextSeq500`, `blueprint`, `merged_bam`, `merged_fastq`, `mirna_bcl`, `scrna_bcl`, `sra`, `tgml`. They are not used by the platform.
+    * *SST*:
+        * `tgml` : Legacy argument for Salva team only. Should be the TGML fastq prefix, relative to /gpfs/projects/spicuglia/. Should not include the `_L001_R1_001` part. Here is an example of how you can get a list of prefixes ready to paste in this column. On sacapus : `cd /gpfs/projects/spicuglia/mw; find inp/fastq/run233/ -name '\*\_L001\_R1\_001.fastq.gz' | sed 's/\_L001\_R1\_001.fastq.gz//'`
+        * `sra` : Should be a SRR id for the sample.
+        * `NextSeq500` : Should be the absolute prefix to fastq files produced by the NextSeq500 platform.
+        * `merge_fastq` : Should be comma-separated list of `sample_name` that need to be merged.
+        * TODO GC: add explanations for other accession values here
+* `run`, `exp`, `project`, `customer`, `cell_type`, `chip_target` : These columns contains optional metadata used to organize produced files in different subtrees.
+
+
+# FAQ
+
+## Activer/Réparer la validation des données et menus déroulants
+
+1. Sélectionner la colonne à valider
+2. Menu Données > Validation des données
+3. Choisir la sélection à partir du plage
+4. Aller dans le feuillet data\_validation\_lists
+5. Sélectionner la colonne corrrespondant aux valeurs correctes.
+6. Si c'est la colonne N qui est sélectionnée, ajuster le "N:N" en "N2:N" pour ne pas que l'entête puisse être un choix.
+7. Retourner dans le feuillet 'samples'. Normalement ça marche.
+8. Optionnellement retirer la validation de la cellule d'entête pour ne pas avoir le message d'avertissement.
+
+## How to edit this docs?
+
+The rmarkdown files are in the "src/rmd" folder in this repository. You can edit it directly from github from this link if you have write access to the repository:
+https://github.com/guillaumecharbonnier/mw-sst/tree/master/src/rmd
+
+1. Edit the markown files.
+2. In R, `bookdown::render_book('index.Rmd')`
+3. git commit and push changes in docs directory.
+
