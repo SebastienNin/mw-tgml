@@ -68,7 +68,8 @@ if os.path.isfile("../mw-tgml/Sequencing_summary.xlsx"):
             bcl2fastq_target = bcl2fastq_prefix + "/Reports/html/tree.html"
             data = current_df[['Sample_ID','Sample_Name','Sample_Plate','Sample_Well','I7_Index_ID','index','I5_Index_ID','index2','Sample_Project','Description']]
         else:
-            bcl2fastq_prefix = "out/bcl2fastq/_--no-lane-splitting/" + experiment
+            # By default, create the fastq for index reads! Important to use when debugging!
+            bcl2fastq_prefix = "out/bcl2fastq/_--no-lane-splitting_--create-fastq-for-index-reads/" + experiment
             bcl2fastq_target = bcl2fastq_prefix + "/Reports/html/tree.html"
             data = current_df[['Sample_ID','Sample_Name','Sample_Plate','Sample_Well','I7_Index_ID','index','I5_Index_ID','index2','Sample_Project','Description']]
         
