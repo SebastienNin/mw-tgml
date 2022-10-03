@@ -2,21 +2,21 @@
 # This script aims is to create all the needed target for the TGML workflow.
 # It is based on the mapper from Salvatore Spicuglia's mapper
 
-if not os.path.isfile("../mw-sst/Sequencing_summary.xlsx"):
+if not os.path.isfile("../mw-tgml/Sequencing_summary.xlsx"):
     #eprint('No Sequencing_summary.xlsx')
     mwconf['targets'] = []
     mwconf['bcl2fastq_targets'] = []
     mwconf['qc_targets'] = []
 else:
-    samples = pandas.read_excel("../mw-sst/Sequencing_summary.xlsx", sheet_name="samples", engine='openpyxl')
-    #genomes = pandas.read_excel("../mw-sst/Sequencing_summary.xlsx", sheet_name="genomes")
-    #samples = pandas.read_csv("../mw-sst/Sequencing_summary.csv")
+    samples = pandas.read_excel("../mw-tgml/Sequencing_summary.xlsx", sheet_name="samples", engine='openpyxl')
+    #genomes = pandas.read_excel("../mw-tgml/Sequencing_summary.xlsx", sheet_name="genomes")
+    #samples = pandas.read_csv("../mw-tgml/Sequencing_summary.csv")
     samples.type.fillna("Unknown", inplace=True)
 
     # TGML users have this column in their sequencing summary
     # but SST users do not.
     if "analysis_type" not in samples:
-        samples['analysis_type'] = "default"
+        samples['Analysis_type'] = "default"
 
     mwconf['targets'] = []
     if 'ids' not in mwconf:
@@ -24,29 +24,29 @@ else:
 
     id_chip_qc_to_cat = []
     id_chip_qc_fingerprint_to_cat = []
-    id_multiqc_sst = []
+    id_multiqc_tgml = []
     ln_bam_list_all_chip_atac = []
 
     for index, row in samples.iterrows():
-        SAMPLE_NAME = str(row['sample_name'])
-        PROCESS = str(row['process'])
+        SAMPLE_NAME = str(row['Sample_Name'])
+        PROCESS = str(row['Process'])
 
         # If samples have to be processed, get all the needed info from summary
         if PROCESS in ['yes','done']:
-            TYPE = str(row['type'])
-            SE_OR_PE = str(row['se_or_pe'])
-            SAMPLE_NAME = str(row['sample_name'])
-            EXP = str(row['exp'])
+            TYPE = str(row['Type']).replace("-seq", "")
+            SE_OR_PE = str(row['Se_or_Pe'])
+            SAMPLE_NAME = str(row['Sample_Name'])
+            EXP = str(row['Exp'])
             PROJECT = str(row['Sample_Project'])
-            CELL_TYPE = str(row['cell_type'])
-            CUSTOMER = str(row['customer'])
-            ACCESSION = str(row['accession'])
-            ANALYSIS_TYPE = str(row['analysis_type'])
+            CELL_TYPE = str(row['Cell_type'])
+            CUSTOMER = str(row['Customer'])
+            ACCESSION = str(row['Accession'])
+            ANALYSIS_TYPE = str(row['Analysis_type'])
 
-            if numpy.isnan(row['run']):
+            if numpy.isnan(row['Run']):
                 RUN = 'nan'
             else:
-                RUN = str(int(row['run']))
+                RUN = str(int(row['Run']))
 
             if pandas.isna(ACCESSION):
                 eprint('Sample ' + SAMPLE_NAME + ' should have a valid accession to be processed.')
@@ -58,7 +58,7 @@ else:
             # for any sources
 
             # New output from NextSeq500 after Windows 10 update (September 2020)
-            elif str(row['origin']) == 'NS500_W10':
+            elif str(row['Origin']) == 'NS500_W10':
                 if SE_OR_PE == 'se':
                     fq_to_cat = [ACCESSION + "/" + SAMPLE_NAME.replace("_", "-") + "_S" + str(int(row['Sample_Well'])) + "_L00" + str(n) + "_R1_001.fastq.gz" for n in range(1,5)]
                     #fq_to_cat = [ACCESSION + "_L00" + str(n) + "_R1_001.fastq.gz" for n in range(1,5)]
@@ -79,7 +79,7 @@ else:
                     fq_to_rename_2 = "out/cat/" + id_cat_2
 
             # Old output from NextSeq500. Keep it in case it is needed
-            elif str(row['origin']) == 'NextSeq500':
+            elif str(row['Origin']) == 'NextSeq500':
                 if SE_OR_PE == 'se':
                     fq_to_cat = [ACCESSION + "_L00" + str(n) + "_R1_001.fastq.gz" for n in range(1,5)]
                     id_cat = "merge-nexsteq500-se/" + SAMPLE_NAME + '.fastq.gz'
@@ -97,9 +97,9 @@ else:
                     fq_to_rename_2 = "out/cat/" + id_cat_2
 
             # Process bcl files from NextSeq500. Output are NOT splitted by lane and fastq files for indexes are generated
-            elif(str(row['origin']) in ['bcl', 'bcl_no_mismatch'] and str(row['type']) not in ['scRNA', 'scRNA_HTO', 'cellplex']):
-                if(str(row['origin']) in ['bcl']):
-                    bcl_prefix = "out/bcl2fastq/_--no-lane-splitting_--create-fastq-for-index-reads/" + ACCESSION + "/" + str(row['Sample_Project']) + "/" + str(row["Sample_ID"]) + "/" + str(row["Sample_Name"]) + "_S" + str(int(row["Sample_Well"]))
+            elif(str(row['Origin']) in ['bcl', 'bcl_no_mismatch'] and str(row['Type']) not in ['scRNA', 'scRNA_HTO', 'Cellplex']):
+                if(str(row['Origin']) in ['bcl']):
+                    bcl_prefix = "out/bcl2fastq/_--no-lane-splitting/" + ACCESSION + "/" + str(row['Sample_Project']) + "/" + str(row["Sample_ID"]) + "/" + str(row["Sample_Name"]) + "_S" + str(int(row["Sample_Well"]))
                 else:
                     bcl_prefix = "out/bcl2fastq/_--no-lane-splitting_--barcode-mismatches_0/" + ACCESSION + "/" + str(row['Sample_Project']) + "/" + str(row["Sample_ID"]) + "/" + str(row["Sample_Name"]) + "_S" + str(int(row["Sample_Well"]))
                 bcl_prefix = bcl_prefix.replace('//','/')
@@ -112,7 +112,7 @@ else:
 
 
             # Add case for scrna_bcl
-            elif(str(row['origin']) == 'bcl' and str(row['type']) in ['scRNA', 'scRNA_HTO', 'cellplex']):
+            elif(str(row['Origin']) == 'bcl' and str(row['Type']) in ['scRNA', 'scRNA_HTO', 'Cellplex']):
                 bcl_prefix = "out/cellranger/mkfastq/" + ACCESSION + "/" + "_".join(str(row['Sample_Project']).split("_")[0:2]) + "/outs/fastq_path/" + str(row['Sample_Project']) + "/" + str(row["Sample_ID"]) + "/" + str(row["Sample_Name"])  + "_S" + str(int(row["Sample_Well"]))
                 bcl_prefix = bcl_prefix.replace('//','/')
 
@@ -129,7 +129,7 @@ else:
                     fq_to_rename_1 = "out/cat/" + id_cat_1
                     fq_to_rename_2 = "out/cat/" + id_cat_2
 
-            elif str(row['origin']) == 'sra':
+            elif str(row['Origin']) == 'sra':
                 INPUT_FASTQ_PREFIX = "out/sra-tools/fastq-dump_" + SE_OR_PE + "/" + ACCESSION
                 if SE_OR_PE == 'se':
                     fq_to_rename = INPUT_FASTQ_PREFIX + ".fastq.gz"
@@ -143,13 +143,13 @@ else:
             # aliases are created for fastq in order to gather all samples in the same directory
             # as well as other trees defined in the base_stem_dict dict below
             base_stem_dict = {
-                    "all"           : "sst/all_samples",
-                    "by_type_and_run": "sst/by_type_and_run/" + TYPE + "/run" + RUN,
-                    "by_type_and_exp": "sst/by_type_and_exp/" + TYPE + "/" + EXP,
-                    "by_project"     : "sst/by_project/" + PROJECT,
-                    "by_cell_type"   : "sst/by_cell_type/" + CELL_TYPE,
-                    "by_customer"   : "sst/by_customer/" + CUSTOMER,
-                    "by_run" : "sst/by_run/run" + RUN
+                    "all"           : "tgml/all_samples",
+                    "by_type_and_run": "tgml/by_type_and_run/" + TYPE + "/run" + RUN,
+                    "by_type_and_exp": "tgml/by_type_and_exp/" + TYPE + "/" + EXP,
+                    "by_project"     : "tgml/by_project/" + PROJECT,
+                    "by_cell_type"   : "tgml/by_cell_type/" + CELL_TYPE,
+                    "by_customer"   : "tgml/by_customer/" + CUSTOMER,
+                    "by_run" : "tgml/by_run/run" + RUN
                     }
 
             fq_stem_dict = {}
@@ -240,7 +240,7 @@ else:
 
             # (5
             # Assemblies for each specie keyword should be defined here
-            SPECIE = str(row['specie'])
+            SPECIE = str(row['Specie'])
             if SPECIE in ['human', 'Human', 'Homo_sapiens']:
                 assembly_list = ["GRCh38", "hg19"]
                 gsize = "hs"
@@ -259,7 +259,7 @@ else:
             elif SPECIE in ['Yeast', 'Saccharomyces_cerevisiae']:
                 assembly_list = ["R64-1-1"]
                 gsize = "12e6"
-            elif SPECIE in ['Rat']:
+            elif SPECIE in ['Rat', 'Rattus_norvegicus']:
                 assembly_list = ["Rnor6"]
             elif not pandas.isna(SPECIE):
                 assembly_list = [SPECIE]
@@ -277,10 +277,10 @@ else:
                         aligned_stem_dict[k] = base_stem_dict[k] + "/" + assembly
 
                     # Only run this part if analysis_type is Demultiplexage_Concatenation_Quantification_QC
-                    if row['analysis_type'] in ['Demultiplexage_Concatenation_QC', 'Concatenation_QC']:
+                    if row['Analysis_type'] in ['Demultiplexage_Concatenation_QC', 'Concatenation_QC']:
                         continue
                     else:
-                        bowtie2_stem = "bowtie2/" + row['se_or_pe'] + "_" + assembly + "/sickle/" + row['se_or_pe'] + "_-t_sanger_-q_20/ln/alias/" + fq_stem
+                        bowtie2_stem = "bowtie2/" + row['Se_or_Pe'] + "_" + assembly + "/sickle/" + row['Se_or_Pe'] + "_-t_sanger_-q_20/ln/alias/" + fq_stem
                         bowtie2_log_path = "out/" + bowtie2_stem + ".log"
                         aligned_stem = "samtools/index/samtools/sort/samtools/view_sam_to_bam_-q_30/" + bowtie2_stem
 
@@ -289,7 +289,7 @@ else:
                     mw_idxstat_path = "out/samtools/idxstats/" + aligned_stem + ".idxstat.tsv"
                     mw_bw_path = "out/deepTools/bamCoverage_--binSize_20_--minMappingQuality_0_--normalizeUsing_RPKM/" + aligned_stem + ".bw"
 
-                    if row['type'] == 'RNA':
+                    if row['Type'] == 'RNA':
                         mw_bw_fwd_path = "out/deepTools/bamCoverage_--binSize_20_--minMappingQuality_0_--normalizeUsing_RPKM_--filterRNAstrand_forward/" + aligned_stem + ".bw"
                         mw_bw_rev_path = "out/deepTools/bamCoverage_--binSize_20_--minMappingQuality_0_--normalizeUsing_RPKM_--filterRNAstrand_reverse/" + aligned_stem + ".bw"
                         # 2021-03-25 Add rseqc geneBody_coverage
@@ -314,7 +314,7 @@ else:
 
                         ln_aligned_unspecif_paths = [ln_bam_path, ln_bai_path, ln_idxstat_path, ln_bw_path]
 
-                        if row['type'] == 'RNA':
+                        if row['Type'] == 'RNA':
                             bw_fwd_suffix = aligned_stem_dict[k] + "/bw/stranded/" + SAMPLE_NAME + "_fwd.bw"
                             mwconf['ids'][bw_fwd_suffix] = mw_bw_fwd_path
                             ln_bw_fwd_path = "out/ln/alias/" + bw_fwd_suffix
@@ -332,12 +332,12 @@ else:
 
                             #ln_aligned_unspecif_paths.append(ln_rseqc_path)
 
-                        if PROCESS == 'yes' and row['type'] not in ['RNA_fq_only', 'ChIP_fq_only', 'scRNA', 'scRNA_HTO', 'cellplex', 'Demultiplexage_Concatenation_QC']:
+                        if PROCESS == 'yes' and row['Type'] not in ['RNA_fq_only', 'ChIP_fq_only', 'scRNA', 'scRNA_HTO', 'cellplex', 'Demultiplexage_Concatenation_QC']:
                             mwconf['targets'].append(ln_aligned_unspecif_paths)
 
                     # (7
                     # Targets for files specific of ChIP-like approaches.
-                    if row['type'] in ['ChIP','ATAC','FAIRE','DNASE','MNase'] and row['analysis_type'] not in ['Demultiplexage_Concatenation_QC', 'Concatenation_QC']:
+                    if row['Type'] in ['ChIP','ATAC','FAIRE','DNASE','MNase'] and row['Analysis_type'] not in ['Demultiplexage_Concatenation_QC', 'Concatenation_QC']:
                         mw_chip_qc_fingerprint_prefix = "out/deepTools/plotFingerprint/" + aligned_stem
                         mw_chip_qc_fingerprint_metrics = mw_chip_qc_fingerprint_prefix + ".metrics.tsv"
                         mw_chip_qc_fingerprint_counts = mw_chip_qc_fingerprint_prefix + ".counts.tsv"
@@ -393,16 +393,16 @@ else:
 
                         # (8
                         # Peak-calling with control:
-                        if not pandas.isna(row['control_name']):
-                            mw_bed_broad = "out/macs2/callpeak_--broad_--gsize_" + gsize + "/" + aligned_stem + "_over_" + row['control_name'] + "_peaks.bed"
-                            mw_bed_narrow = "out/macs2/callpeak_--gsize_" + gsize + "/" + aligned_stem + "_over_" + row['control_name'] + "_peaks.bed"
+                        if not pandas.isna(row['input_chip']):
+                            mw_bed_broad = "out/macs2/callpeak_--broad_--gsize_" + gsize + "/" + aligned_stem + "_over_" + row['input_chip'] + "_peaks.bed"
+                            mw_bed_narrow = "out/macs2/callpeak_--gsize_" + gsize + "/" + aligned_stem + "_over_" + row['input_chip'] + "_peaks.bed"
 
                             for k in aligned_stem_dict.keys():
-                                bed_broad_suffix = aligned_stem_dict[k] + "/bed/broad/" + SAMPLE_NAME + "_over_" + row['control_name'] + "_peaks.bed"
+                                bed_broad_suffix = aligned_stem_dict[k] + "/bed/broad/" + SAMPLE_NAME + "_over_" + row['input_chip'] + "_peaks.bed"
                                 mwconf['ids'][bed_broad_suffix] = mw_bed_broad
                                 ln_bed_broad_path = "out/ln/alias/" + bed_broad_suffix
 
-                                bed_narrow_suffix = aligned_stem_dict[k] + "/bed/narrow/" + SAMPLE_NAME + "_over_" + row['control_name'] + "_peaks.bed"
+                                bed_narrow_suffix = aligned_stem_dict[k] + "/bed/narrow/" + SAMPLE_NAME + "_over_" + row['input_chip'] + "_peaks.bed"
                                 mwconf['ids'][bed_narrow_suffix] = mw_bed_narrow
                                 ln_bed_narrow_path = "out/ln/alias/" + bed_narrow_suffix
 
@@ -413,9 +413,9 @@ else:
                         # (9
                         # Quantile normalization
                         if not pandas.isna(row['quantile_normalization_name']):
-                            mw_danpos_wiq_path = "out/ucsc/wigToBigWig_-clip_chrominfo-" + assembly + "/danpos/wiq_chrominfo-" + assembly + "/danpos/dtriple/ln/alias/sst/all_samples/" + assembly + "/bam/" + SAMPLE_NAME + "_qnorVS_" + row['quantile_normalization_name'] + ".bw"
+                            mw_danpos_wiq_path = "out/ucsc/wigToBigWig_-clip_chrominfo-" + assembly + "/danpos/wiq_chrominfo-" + assembly + "/danpos/dtriple/ln/alias/tgml/all_samples/" + assembly + "/bam/" + SAMPLE_NAME + "_qnorVS_" + row['quantile_normalization_name'] + ".bw"
                             for k in aligned_stem_dict.keys():
-                                id_suffix = aligned_stem_dict[k] + "/bw/quantile_normalized/" + row['sample_name'] + "_over_" + row['quantile_normalization_name'] + ".bw"
+                                id_suffix = aligned_stem_dict[k] + "/bw/quantile_normalized/" + row['Sample_Name'] + "_over_" + row['quantile_normalization_name'] + ".bw"
                                 mwconf['ids'][id_suffix] = mw_danpos_wiq_path
                                 ln_path = "out/ln/alias/" + id_suffix
 
@@ -425,11 +425,11 @@ else:
     # (10
     # Add here treatment by exp for RNA-Seq
     # Only works if exp (column Q) as been specified
-    rna_exps = samples[(samples['process'].isin(['yes','done'])) & samples['type'].isin(['RNA']) & (samples['exp'] != '')].exp.unique()
-    rna_exps_to_process = samples[(samples['process'].isin(['yes'])) & samples['type'].isin(['RNA']) & (samples['exp'] != '')].exp.unique()
+    rna_exps = samples[(samples['Process'].isin(['yes','done'])) & samples['Type'].isin(['RNA']) & (samples['Exp'] != '')].exp.unique()
+    rna_exps_to_process = samples[(samples['Process'].isin(['yes'])) & samples['Type'].isin(['RNA']) & (samples['Exp'] != '')].exp.unique()
 
     for rna_exp in rna_exps:
-        rna_exp_samples = samples[(samples['process'].isin(['yes','done'])) & (samples['exp'] == rna_exp)]
+        rna_exp_samples = samples[(samples['Process'].isin(['yes','done'])) & (samples['Exp'] == rna_exp)]
 
         if len(rna_exp_samples.specie.unique()) != 1:
             eprint('More than one specie for this RNA experiment ' + str(rna_exp) + '. Analysis steps involving all the samples from this experiment are skipped. There is likely an error in your Sequencing_summary.xlsx')
@@ -452,13 +452,13 @@ else:
                 bam_id = bam_list_id = "bam-" + assembly + "-" + rna_exp
                 # Not sure if '_' should absolutely by replaced by '-'
                 bam_id = bam_id.replace('_','-')
-                bam_paths = str(["out/ln/alias/sst/all_samples/" + assembly + "/bam/" + sample + ".bam" for sample in rna_exp_samples.sample_name])
+                bam_paths = str(["out/ln/alias/tgml/all_samples/" + assembly + "/bam/" + sample + ".bam" for sample in rna_exp_samples.sample_name])
                 mwconf['ids'][bam_id] = bam_paths
                 mwconf['ids'][bam_list_id] = bam_paths
                 
                 for norm in ["raw", "rpkm"]:
                     mw_path = "out/r/tidy_featureCounts/subread/featureCounts_-O_-t_exon_-g_merge_gene_id_name_gtf-" + assembly + "-merge-attr-retrieve-ensembl_" + bam_id + "_" + norm + ".tsv"
-                    for stem in ["sst/all_samples/", "sst/by_type_and_exp/RNA/" + rna_exp + "/"]:
+                    for stem in ["tgml/all_samples/", "tgml/by_type_and_exp/RNA/" + rna_exp + "/"]:
                         id_suffix = stem + assembly + "-merge-attr-retrieve/counts/" + rna_exp + "_" + norm + ".tsv"
                         mwconf['ids'][id_suffix] = mw_path
 
@@ -482,21 +482,21 @@ else:
                         mwconf["targets"].append(ln_rseqc_tin_path)
 
     # Processing of single-cell RNA-seq
-    scRNA_samples = samples[(samples['process'].isin(['yes','done'])) & (samples['type'] == 'scRNA')].Sample_Project.unique()
+    scRNA_samples = samples[(samples['Process'].isin(['yes','done'])) & (samples['Type'] == 'scRNA')].Sample_Project.unique()
     for scRNA_project in scRNA_samples:
-        project_samples = samples[(samples['process'].isin(['yes','done'])) & (samples['Sample_Project'] == scRNA_project)]
+        project_samples = samples[(samples['Process'].isin(['yes','done'])) & (samples['Sample_Project'] == scRNA_project)]
         # Run cellranger count on cellranger mkfastq output
-        if project_samples['analysis_type'].all() in ['Demultiplexage_Concatenation_Quantification_QC']:
+        if project_samples['Analysis_type'].all() in ['Demultiplexage_Concatenation_Quantification_QC']:
             # Loop on sample to run cellranger count on each sample
             SAMPLES = project_samples['Sample_Name']
             protected_underscore_line = "cellranger/count\t"
             samples_to_protect = []
             for SAMPLE in SAMPLES:
                 samples_to_protect.append(SAMPLE)
-                SPECIE = str(project_samples['specie'].unique()[0])
-                ACCESSION = str(project_samples['accession'].unique()[0])
-                PROCESS = str(project_samples['process'].unique()[0])
-                RUN = str(int(project_samples['run'].unique()[0]))
+                SPECIE = str(project_samples['Specie'].unique()[0])
+                ACCESSION = str(project_samples['Accession'].unique()[0])
+                PROCESS = str(project_samples['Process'].unique()[0])
+                RUN = str(int(project_samples['Run'].unique()[0]))
                 # Checking specie to process.
                 # For now, on the platform we process only human and mouse.
                 if SPECIE in ['human', 'Human', 'Homo_sapiens']:
@@ -508,14 +508,14 @@ else:
                 cellranger_count_target = "out/cellranger/count_--sample_" + SAMPLE + "_" + scrna_assembly + "/cellranger/mkfastq" + ACCESSION + "/process_done"
                 # Test to add ln for cellranger
                 cellranger_count_prefix = "/cellranger/count_--sample_" + SAMPLE + "_" + scrna_assembly + "/cellranger/mkfastq" + ACCESSION
-                ln_cellranger_count = "out/ln/alias/sst/by_run/run" + RUN + cellranger_count_prefix
+                ln_cellranger_count = "out/ln/alias/tgml/by_run/run" + RUN + cellranger_count_prefix
                 if PROCESS == 'yes':
                     mwconf['targets'].append(cellranger_count_target)
                     #mwconf['targets'].append(ln_cellranger_count)
             # Add the protected_underscore_line to the scRNA_protectedunderscores.tsv file, which is created on each scRNA-seq processing. 
             # This prevent error when having sample name with space
             # 07-07-2021: doesn't work when multiple scRNA are processed.
-            if(str(project_samples['process'].unique()[0]) == 'yes'):
+            if(str(project_samples['Process'].unique()[0]) == 'yes'):
                 #print(protected_underscore_line)
                 protected_underscore_line = protected_underscore_line + ",".join(samples_to_protect)
                 #print(protected_underscore_line)
@@ -529,7 +529,7 @@ else:
             # 2021-07-05: Add CITE-seq and cellhashing processing
             ADT = list(project_samples['ADT_information'])
             HTO = list(project_samples['HTO_information'])
-            SCRNA_KIT = str(project_samples['Kit_barcode_scRNA'].unique()[0])
+            SCRNA_KIT = str(project_samples['Kit_HTO'].unique()[0])
 
             # Identify data where HTO or ADT are presents
             # Naive search of the letter A in string. Maybe find an other way to do it.
@@ -573,19 +573,19 @@ else:
                     citeseq_output_target = citeseq_output_prefix + "/Results_" + match + "/run_report.yaml"
 
 
-    sst_subtrees = ["out/ln/alias/sst/all_samples/"] +\
-    glob.glob("out/ln/alias/sst/by_project/*/") +\
-    glob.glob("out/ln/alias/sst/by_customer/*/") +\
-    glob.glob("out/ln/alias/sst/by_cell_type/*/") +\
-    glob.glob("out/ln/alias/sst/by_type_and_exp/*/*/") +\
-    glob.glob("out/ln/alias/sst/by_type_and_run/*/*/") +\
-    glob.glob("out/ln/alias/sst/by_run/*/")
+    tgml_subtrees = ["out/ln/alias/tgml/all_samples/"] +\
+    glob.glob("out/ln/alias/tgml/by_project/*/") +\
+    glob.glob("out/ln/alias/tgml/by_customer/*/") +\
+    glob.glob("out/ln/alias/tgml/by_cell_type/*/") +\
+    glob.glob("out/ln/alias/tgml/by_type_and_exp/*/*/") +\
+    glob.glob("out/ln/alias/tgml/by_type_and_run/*/*/") +\
+    glob.glob("out/ln/alias/tgml/by_run/*/")
 
-    multiqc_targets = [stem + "multiqc_report.html" for stem in sst_subtrees]
+    multiqc_targets = [stem + "multiqc_report.html" for stem in tgml_subtrees]
     multiqc_targets_interactive = [sub.replace("out/", "out/multiqc/dir_--interactive/") for sub in multiqc_targets]
     multiqc_targets_flat = [sub.replace("out/", "out/multiqc/dir_--flat/") for sub in multiqc_targets]
 
-    md5sum_targets = [sub.replace("out/", "out/find/md5sum/") for sub in sst_subtrees]
+    md5sum_targets = [sub.replace("out/", "out/find/md5sum/") for sub in tgml_subtrees]
     md5sum_targets = [stem + "md5sum.txt" for stem in md5sum_targets]
 
     mwconf['qc_targets'] = multiqc_targets_interactive + multiqc_targets_flat + md5sum_targets

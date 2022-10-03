@@ -16,34 +16,28 @@ if os.path.isfile("../mw-tgml/Sequencing_summary.xlsx"):
     samples = pandas.read_excel(
         "../mw-tgml/Sequencing_summary.xlsx", sheet_name="samples", engine="openpyxl")
 
-    samples_from_bcl = samples[samples['type'].isin(['scRNA'])]
+    samples_from_bcl = samples[samples['Type'].isin(['scRNA'])]
 
-    experiments_from_bcl = samples_from_bcl.accession.unique()
+    experiments_from_bcl = samples_from_bcl.Accession.unique()
 
     #mwconf['bcl2fastq_targets'] = []
 
     for experiment in experiments_from_bcl:
         # Variable to get the loop dataframe
-        current_df = samples_from_bcl[samples['accession'] == experiment]
-        if(current_df.analysis_type.unique() == "Demultiplexage_Concatenation_Quantification_QC"):
+        current_df = samples_from_bcl[samples['Accession'] == experiment]
+        if(current_df.analysis_Type.unique() == "Demultiplexage_Concatenation_Quantification_QC"):
             # print(current_df)
             current_HTO_list = list(current_df.HTO_information)
             current_ADT_list = list(current_df.ADT_information)
-
-            #print(current_HTO_list)
-            #print(current_ADT_list)
 
             # Identify data where HTO or ADT are presents
             # Naive search of the letter A in string. Maybe find an other way to do it.
             if len(current_HTO_list) > 1:
                 HTO_matching = ["A" in str(f) for f in current_HTO_list]
-                #print(HTO_matching)
             else:
                 continue
-
             if len(current_ADT_list) > 1:
                 ADT_matching = ["A" in str(f) for f in current_ADT_list]
-                #print(ADT_matching)
             else:
                 continue
 
@@ -67,9 +61,9 @@ if os.path.isfile("../mw-tgml/Sequencing_summary.xlsx"):
                     # Barcode sequences are different depending on the kit.
                     # TotalSeq A have the Barcode sequence on the first position of the read, whereas TotalseqB having Barcode sequence beginning after the 10 first nucleotides
                     # print(info_df.Kit_barcode_scRNA)
-                    if(info_df.Kit == "Total_seq_A"):
+                    if(info_df.Kit_HTO == "Total_seq_A"):
                         output_prefix = "out/cite-seq_count/_-cbf_1_-cbl_16_-umif_17_-umil_28_-o_Results_" + match + "/" + info_df.accession
-                    elif(info_df.Kit == "Total_seq_B"):
+                    elif(info_df.Kit_HTO == "Total_seq_B"):
                         output_prefix = "out/cite-seq_count/_-cbf_1_-cbl_16_-umif_17_-umil_28_-trim_10_-o_Results_" + match + "/" + info_df.accession
                     else:
                         output_prefix = "out/cite-seq_count/_-cbf_1_-cbl_16_-umif_17_-umil_28_-o_Results_" + match + "/" + info_df.accession
@@ -107,25 +101,25 @@ if os.path.isfile("../mw-tgml/Sequencing_summary.xlsx"):
 
                     # Add 
 
-                    if current_df[['process']].iloc[0, 0] == "yes":
+                    if current_df[['Process']].iloc[0, 0] == "yes":
                         os.makedirs(output_prefix, exist_ok=True)
-                        myfile = open(tmp_filename, 'w')
+                        myfile = open(filename, 'w')
                         for el in info_to_write:
                             myfile.write(el + "\n")
                         myfile.close()
-                        if(os.path.isfile(filename)):
-                            if(hashlib.md5(open(filename, 'rb').read()).hexdigest() != hashlib.md5(open(tmp_filename, 'rb').read()).hexdigest()):
-                                os.replace(filename, tmp_filename)
-                            else:
-                                if(os.path.isfile(tmp_filename)):
-                                    os.remove(tmp_filename)
+                        #if(os.path.isfile(filename)):
+                            #if(hashlib.md5(open(filename, 'rb').read()).hexdigest() != hashlib.md5(open(tmp_filename, 'rb').read()).hexdigest()):
+                                #os.replace(filename, tmp_filename)
+                            #else:
+                                #if(os.path.isfile(tmp_filename)):
+                                    #os.remove(tmp_filename)
                                 # 2021-05-27: Try to correct missing tmp file error by adding a touch if the tmp file doesn't exist.
-                                if(os.path.isfile(tmp_filename)):
-                                    Path(tmp_filename).touch()
-                                    os.remove(tmp_filename)
-                                else:
-                                    Path(tmp_filename).touch()
-                                    os.remove(tmp_filename)
-                    else:
-                        if(os.path.isfile(tmp_filename)):
-                            os.rename(tmp_filename, filename)
+                                #if(os.path.isfile(tmp_filename)):
+                                    #Path(tmp_filename).touch()
+                                    #os.remove(tmp_filename)
+                                #else:
+                                    #Path(tmp_filename).touch()
+                                    #os.remove(tmp_filename)
+                    #else:
+                        #if(os.path.isfile(tmp_filename)):
+                            #os.rename(tmp_filename, filename)
