@@ -22,11 +22,7 @@ if os.path.isfile("../mw-tgml/Sequencing_summary.xlsx"):
     for experiment in experiments_cellplex:
         # Variable to get the loop dataframe
         current_df = samples_cellplex[samples['Accession'] == experiment]
-<<<<<<< HEAD
         kit_used = current_df.Kit_index.unique()[0]
-=======
-        kit_used = current_df.Kit.unique()[0]
->>>>>>> cb3b9150013c3422b129e47985459d5a69c50965
         SPECIE = current_df.Specie.unique()[0]
         ACCESSION = current_df.Accession.unique()[0]
 
