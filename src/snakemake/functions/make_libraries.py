@@ -43,13 +43,13 @@ if os.path.isfile("../mw-tgml/Sequencing_summary.xlsx"):
         info_to_write = info_to_write + "[libraries]\nfastq_id,fastqs,feature_types\n"
         
         for index, row in current_df.iterrows():
-            info_to_write = info_to_write + row['Sample_Name'] + "," + os.getcwd() + "/out/cellranger/mkfastq" + row['Accession'] + "/" + "_".join(str(row['Sample_Project']).split("_")[0:2]) + "/outs/fastq_path/" + str(row['Sample_Project']) + "/" + str(row['Sample_ID']) + "," + row['cellplex_feature_type'] + "\n"
+            info_to_write = info_to_write + row['Sample_Name'] + "," + os.getcwd() + "/out/cellranger/mkfastq" + row['Accession'] + "/" + "_".join(str(row['Sample_Project']).split("_")[0:2]) + "/outs/fastq_path/" + str(row['Sample_Project']) + "/" + str(row['Sample_ID']) + "," + row['Cellplex_feature_type'] + "\n"
 
         info_to_write = info_to_write + "\n[samples]\nsample_id,cmo_ids,description\n" 
 
         for index, row in current_df.iterrows():
             if(row['Cellplex_feature_type'] == "Multiplexing Capture"):
-                CMO_list = row['Cellplex_sample_CMO'].split(";")
+                CMO_list = row['CMO_information'].split(";")
                 for CMO in CMO_list:
                     CMO_split = CMO.split(",")
                     SAMPLE = CMO_split[0]

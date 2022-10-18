@@ -9,13 +9,9 @@ if not os.path.isfile("../mw-tgml/Sequencing_summary.xlsx"):
     mwconf['qc_targets'] = []
 else:
     samples = pandas.read_excel("../mw-tgml/Sequencing_summary.xlsx", sheet_name="samples", engine='openpyxl')
-    #genomes = pandas.read_excel("../mw-tgml/Sequencing_summary.xlsx", sheet_name="genomes")
-    #samples = pandas.read_csv("../mw-tgml/Sequencing_summary.csv")
-    samples.type.fillna("Unknown", inplace=True)
+    samples.Type.fillna("Unknown", inplace=True)
 
-    # TGML users have this column in their sequencing summary
-    # but SST users do not.
-    if "analysis_type" not in samples:
+    if "Analysis_type" not in samples:
         samples['Analysis_type'] = "default"
 
     mwconf['targets'] = []
@@ -99,11 +95,7 @@ else:
             # Process bcl files from NextSeq500. Output are NOT splitted by lane and fastq files for indexes are generated
             elif(str(row['Origin']) in ['bcl', 'bcl_no_mismatch'] and str(row['Type']) not in ['scRNA', 'scRNA_HTO', 'Cellplex']):
                 if(str(row['Origin']) in ['bcl']):
-<<<<<<< HEAD
-                    bcl_prefix = "out/bcl2fastq/_--no-lane-splitting/" + ACCESSION + "/" + str(row['Sample_Project']) + "/" + str(row["Sample_ID"]) + "/" + str(row["Sample_Name"]) + "_S" + str(int(row["Sample_Well"]))
-=======
                     bcl_prefix = "out/bcl2fastq/_--no-lane-splitting_--create-fastq-for-index-reads/" + ACCESSION + "/" + str(row['Sample_Project']) + "/" + str(row["Sample_ID"]) + "/" + str(row["Sample_Name"]) + "_S" + str(int(row["Sample_Well"]))
->>>>>>> cb3b9150013c3422b129e47985459d5a69c50965
                 else:
                     bcl_prefix = "out/bcl2fastq/_--no-lane-splitting_--barcode-mismatches_0/" + ACCESSION + "/" + str(row['Sample_Project']) + "/" + str(row["Sample_ID"]) + "/" + str(row["Sample_Name"]) + "_S" + str(int(row["Sample_Well"]))
                 bcl_prefix = bcl_prefix.replace('//','/')
@@ -113,7 +105,6 @@ else:
                 elif SE_OR_PE == 'pe':
                     fq_to_rename_1 = bcl_prefix + "_R1_001.fastq.gz"
                     fq_to_rename_2 = bcl_prefix + "_R2_001.fastq.gz"
-
 
             # Add case for scrna_bcl
             elif(str(row['Origin']) == 'bcl' and str(row['Type']) in ['scRNA', 'scRNA_HTO', 'Cellplex']):
@@ -397,16 +388,16 @@ else:
 
                         # (8
                         # Peak-calling with control:
-                        if not pandas.isna(row['input_chip']):
-                            mw_bed_broad = "out/macs2/callpeak_--broad_--gsize_" + gsize + "/" + aligned_stem + "_over_" + row['input_chip'] + "_peaks.bed"
-                            mw_bed_narrow = "out/macs2/callpeak_--gsize_" + gsize + "/" + aligned_stem + "_over_" + row['input_chip'] + "_peaks.bed"
+                        if not pandas.isna(row['Input_chip']):
+                            mw_bed_broad = "out/macs2/callpeak_--broad_--gsize_" + gsize + "/" + aligned_stem + "_over_" + row['Input_chip'] + "_peaks.bed"
+                            mw_bed_narrow = "out/macs2/callpeak_--gsize_" + gsize + "/" + aligned_stem + "_over_" + row['Input_chip'] + "_peaks.bed"
 
                             for k in aligned_stem_dict.keys():
-                                bed_broad_suffix = aligned_stem_dict[k] + "/bed/broad/" + SAMPLE_NAME + "_over_" + row['input_chip'] + "_peaks.bed"
+                                bed_broad_suffix = aligned_stem_dict[k] + "/bed/broad/" + SAMPLE_NAME + "_over_" + row['Input_chip'] + "_peaks.bed"
                                 mwconf['ids'][bed_broad_suffix] = mw_bed_broad
                                 ln_bed_broad_path = "out/ln/alias/" + bed_broad_suffix
 
-                                bed_narrow_suffix = aligned_stem_dict[k] + "/bed/narrow/" + SAMPLE_NAME + "_over_" + row['input_chip'] + "_peaks.bed"
+                                bed_narrow_suffix = aligned_stem_dict[k] + "/bed/narrow/" + SAMPLE_NAME + "_over_" + row['Input_chip'] + "_peaks.bed"
                                 mwconf['ids'][bed_narrow_suffix] = mw_bed_narrow
                                 ln_bed_narrow_path = "out/ln/alias/" + bed_narrow_suffix
 
@@ -416,10 +407,10 @@ else:
 
                         # (9
                         # Quantile normalization
-                        if not pandas.isna(row['quantile_normalization_name']):
-                            mw_danpos_wiq_path = "out/ucsc/wigToBigWig_-clip_chrominfo-" + assembly + "/danpos/wiq_chrominfo-" + assembly + "/danpos/dtriple/ln/alias/tgml/all_samples/" + assembly + "/bam/" + SAMPLE_NAME + "_qnorVS_" + row['quantile_normalization_name'] + ".bw"
+                        if not pandas.isna(row['Quantile_normalization_name']):
+                            mw_danpos_wiq_path = "out/ucsc/wigToBigWig_-clip_chrominfo-" + assembly + "/danpos/wiq_chrominfo-" + assembly + "/danpos/dtriple/ln/alias/tgml/all_samples/" + assembly + "/bam/" + SAMPLE_NAME + "_qnorVS_" + row['Quantile_normalization_name'] + ".bw"
                             for k in aligned_stem_dict.keys():
-                                id_suffix = aligned_stem_dict[k] + "/bw/quantile_normalized/" + row['Sample_Name'] + "_over_" + row['quantile_normalization_name'] + ".bw"
+                                id_suffix = aligned_stem_dict[k] + "/bw/quantile_normalized/" + row['Sample_Name'] + "_over_" + row['Quantile_normalization_name'] + ".bw"
                                 mwconf['ids'][id_suffix] = mw_danpos_wiq_path
                                 ln_path = "out/ln/alias/" + id_suffix
 
@@ -429,8 +420,8 @@ else:
     # (10
     # Add here treatment by exp for RNA-Seq
     # Only works if exp (column Q) as been specified
-    rna_exps = samples[(samples['Process'].isin(['yes','done'])) & samples['Type'].isin(['RNA']) & (samples['Exp'] != '')].exp.unique()
-    rna_exps_to_process = samples[(samples['Process'].isin(['yes'])) & samples['Type'].isin(['RNA']) & (samples['Exp'] != '')].exp.unique()
+    rna_exps = samples[(samples['Process'].isin(['yes','done'])) & samples['Type'].isin(['RNA']) & (samples['Exp'] != '')].Exp.unique()
+    rna_exps_to_process = samples[(samples['Process'].isin(['yes'])) & samples['Type'].isin(['RNA']) & (samples['Exp'] != '')].Exp.unique()
 
     for rna_exp in rna_exps:
         rna_exp_samples = samples[(samples['Process'].isin(['yes','done'])) & (samples['Exp'] == rna_exp)]

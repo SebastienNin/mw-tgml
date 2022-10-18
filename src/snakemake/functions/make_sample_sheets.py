@@ -36,7 +36,7 @@ if os.path.isfile("../mw-tgml/Sequencing_summary.xlsx"):
     for experiment in experiments_from_bcl:
         # Variable to get the loop dataframe
         current_df = samples_from_bcl[samples['Accession'] == experiment]
-        kit_used = current_df.Kit.unique()[0]
+        kit_used = current_df.Kit_index.unique()[0]
 
         # Condition to determine wether data are single or double indexed
         if(['scRNA-seq', 'scRNA_HTO', 'cellplex'] in current_df.Type.unique()):
@@ -66,12 +66,12 @@ if os.path.isfile("../mw-tgml/Sequencing_summary.xlsx"):
         elif(['bcl_no_mismatch'] in current_df.Origin.unique()):
             bcl2fastq_prefix = "out/bcl2fastq/_--no-lane-splitting_--barcode-mismatches_0/" + experiment
             bcl2fastq_target = bcl2fastq_prefix + "/Reports/html/tree.html"
-            data = current_df[['Sample_ID','Sample_Name','Sample_Plate','Sample_Well','I7_Index_ID','index','I5_Index_ID','index2','Sample_Project','Description']]
+            data = current_df[['Sample_ID','Sample_Name','Sample_Plate','Sample_Well','I7_Index_ID','Index','I5_Index_ID','Index2','Sample_Project','Description']]
         else:
             # By default, create the fastq for index reads! Important to use when debugging!
             bcl2fastq_prefix = "out/bcl2fastq/_--no-lane-splitting_--create-fastq-for-index-reads/" + experiment
             bcl2fastq_target = bcl2fastq_prefix + "/Reports/html/tree.html"
-            data = current_df[['Sample_ID','Sample_Name','Sample_Plate','Sample_Well','I7_Index_ID','index','I5_Index_ID','index2','Sample_Project','Description']]
+            data = current_df[['Sample_ID','Sample_Name','Sample_Plate','Sample_Well','I7_Index_ID','Index','I5_Index_ID','Index2','Sample_Project','Description']]
         
         # Sort by index to prevent trouble with mix of ID and numbers
         data = data.sort_index()
@@ -92,7 +92,7 @@ if os.path.isfile("../mw-tgml/Sequencing_summary.xlsx"):
                 'IEMFileVersion,4\n'
                 'Investigator Name,' + current_df[['Customer']].iloc[0,0]+'\n'
                 'Experiment Name,' + current_df[['Sample_Project']].iloc[0,0]+'\n'
-                'Date,' + current_df[['Date_run']] + '\n'
+                'Date,' + str(current_df[['Date_run']]) + '\n'
                 'Workflow,GenerateFASTQ\n'
                 'Application,NextSeq FASTQ Only\n'
                 'Description,' + current_df[['Description']].iloc[0,0]+'\n'
