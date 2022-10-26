@@ -39,7 +39,7 @@ if os.path.isfile("../mw-tgml/Sequencing_summary.xlsx"):
         kit_used = current_df.Kit_index.unique()[0]
 
         # Condition to determine wether data are single or double indexed
-        if(['scRNA-seq', 'scRNA_HTO', 'cellplex'] in current_df.Type.unique()):
+        if(['scRNA-seq', 'scRNA_HTO', 'Cellplex'] in current_df.Type.unique()):
             bcl2fastq_prefix = "out/cellranger/mkfastq/" + experiment
             bcl2fastq_target = bcl2fastq_prefix + "/Reports/html/tree.html"
             # 8/10/2021 Add fillna to correct an error where I5_Index_ID = NaN but is not detected by str(row['I5_Index_ID']) != "NaN"

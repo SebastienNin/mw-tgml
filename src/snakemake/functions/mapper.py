@@ -28,10 +28,10 @@ else:
         PROCESS = str(row['Process'])
 
         # If samples have to be processed, get all the needed info from summary
-        if PROCESS in ['yes','done']:
+        if PROCESS in ['yes']:
             TYPE = str(row['Type']).replace("-seq", "")
             SE_OR_PE = str(row['Se_or_Pe'])
-            SAMPLE_NAME = str(row['Sample_Name'])
+            SAMPLE_NAME = str(row['sample_name'])
             EXP = str(row['Exp'])
             PROJECT = str(row['Sample_Project'])
             CELL_TYPE = str(row['Cell_type'])
@@ -327,7 +327,7 @@ else:
 
                             #ln_aligned_unspecif_paths.append(ln_rseqc_path)
 
-                        if PROCESS == 'yes' and row['Type'] not in ['RNA_fq_only', 'ChIP_fq_only', 'scRNA', 'scRNA_HTO', 'cellplex', 'Demultiplexage_Concatenation_QC']:
+                        if PROCESS == 'yes' and row['Type'] not in ['RNA_fq_only', 'ChIP_fq_only', 'scRNA', 'scRNA_HTO', 'Cellplex', 'Demultiplexage_Concatenation_QC']:
                             mwconf['targets'].append(ln_aligned_unspecif_paths)
 
                     # (7
@@ -420,7 +420,7 @@ else:
     # (10
     # Add here treatment by exp for RNA-Seq
     # Only works if exp (column Q) as been specified
-    rna_exps = samples[(samples['Process'].isin(['yes','done'])) & samples['Type'].isin(['RNA']) & (samples['Exp'] != '')].Exp.unique()
+    rna_exps = samples[(samples['Process'].isin(['yes'])) & samples['Type'].isin(['RNA']) & (samples['Exp'] != '')].Exp.unique()
     rna_exps_to_process = samples[(samples['Process'].isin(['yes'])) & samples['Type'].isin(['RNA']) & (samples['Exp'] != '')].Exp.unique()
 
     for rna_exp in rna_exps:
@@ -477,9 +477,9 @@ else:
                         mwconf["targets"].append(ln_rseqc_tin_path)
 
     # Processing of single-cell RNA-seq
-    scRNA_samples = samples[(samples['Process'].isin(['yes','done'])) & (samples['Type'] == 'scRNA')].Sample_Project.unique()
+    scRNA_samples = samples[(samples['Process'].isin(['yes'])) & (samples['Type'] == 'scRNA')].Sample_Project.unique()
     for scRNA_project in scRNA_samples:
-        project_samples = samples[(samples['Process'].isin(['yes','done'])) & (samples['Sample_Project'] == scRNA_project)]
+        project_samples = samples[(samples['Process'].isin(['yes'])) & (samples['Sample_Project'] == scRNA_project)]
         # Run cellranger count on cellranger mkfastq output
         if project_samples['Analysis_type'].all() in ['Demultiplexage_Concatenation_Quantification_QC']:
             # Loop on sample to run cellranger count on each sample
