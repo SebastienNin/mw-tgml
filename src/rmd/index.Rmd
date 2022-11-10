@@ -2,8 +2,6 @@
 title: "mw-routine"
 author: "[Guillaume Charbonnier](https://guillaumecharbonnier.github.io/) and [Sebastien Nin](https://www.linkedin.com/in/s%C3%A9bastien-nin-280954a5/)"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
-#bibliography: ["../../inp/library.bib"]
-#link-citations: true
 output:
   bookdown::gitbook:
     split_by: rmd
