@@ -37,10 +37,10 @@ parser.add_argument('run_number', metavar='N', type=int, nargs='+',
 args = parser.parse_args()
 
 #if not os.path.isfile("../new_mw-tgml/Sequencing_summary.xlsx"):
-if not os.path.isfile(mw_path + "mw-sst/Sequencing_summary.xlsx"):
+if not os.path.isfile(mw_path + "mw-tgml/Sequencing_summary.xlsx"):
     print("No Sequencing_summary found. Please check that the Sequencing_summary.xlsx file exists in mw-sst folder.")
 else:
-    samples = pandas.read_excel(mw_path + "mw-sst/Sequencing_summary.xlsx", sheet_name="samples", engine='openpyxl')
+    samples = pandas.read_excel(mw_path + "mw-tgml/Sequencing_summary.xlsx", sheet_name="samples", engine='openpyxl')
     #samples = pandas.read_excel("../new_mw-tgml/Sequencing_summary.xlsx", sheet_name="samples", engine='openpyxl')
 
 FILE_TO_REMOVE = []
@@ -48,24 +48,24 @@ FILE_TO_REMOVE = []
 for run in args.run_number:
     for index, row in samples.iterrows():
         SAMPLE_NAME = str(row['sample_name'])
-        PROCESS = str(row['process'])
+        PROCESS = str(row['Process'])
         if PROCESS in ['yes','done']:            
-            if pandas.isna(row['run']):
+            if pandas.isna(row['Run']):
                 continue
-            if row['run'] == run:
-                RUN = str(int(row['run']))
-                TYPE = str(row['type'])
-                SE_OR_PE = str(row['se_or_pe'])
+            if row['Run'] == run:
+                RUN = str(int(row['Run']))
+                TYPE = str(row['Type'])
+                SE_OR_PE = str(row['Se_or_Pe'])
                 SAMPLE_NAME = str(row['sample_name'])
-                EXP = str(row['exp'])
+                EXP = str(row['Exp'])
                 PROJECT = str(row['Sample_Project'])
-                CELL_TYPE = str(row['cell_type'])
-                CUSTOMER = str(row['customer'])
-                ACCESSION = str(row['accession'])
-                ANALYSIS_TYPE = str(row['analysis_type'])
+                CELL_TYPE = str(row['Cell_Type'])
+                CUSTOMER = str(row['Customer'])
+                ACCESSION = str(row['Accession'])
+                ANALYSIS_TYPE = str(row['Analysis_type'])
 
                 # New output from NextSeq500 after Windows 10 update (September 2020)
-                if str(row['origin']) == 'NS500_W10':
+                if str(row['Origin']) == 'NS500_W10':
                     if SE_OR_PE == 'se':
                         fq_to_cat = [ACCESSION + "/" + SAMPLE_NAME.replace("_", "-") + "_S" + str(int(row['Sample_Well'])) + "_L00" + str(n) + "_R1_001.fastq.gz" for n in range(1,5)]
                         #fq_to_cat = [ACCESSION + "_L00" + str(n) + "_R1_001.fastq.gz" for n in range(1,5)]
@@ -83,7 +83,7 @@ for run in args.run_number:
                         fq_to_rename_2 = "out/cat/" + id_cat_2
 
                 # Old output from NextSeq500. Keep it in case it is needed
-                elif str(row['origin']) == 'NextSeq500':
+                elif str(row['Origin']) == 'NextSeq500':
                     if SE_OR_PE == 'se':
                         fq_to_cat = [ACCESSION + "_L00" + str(n) + "_R1_001.fastq.gz" for n in range(1,5)]
                         id_cat = "merge-nexsteq500-se/" + SAMPLE_NAME + '.fastq.gz'
@@ -98,8 +98,8 @@ for run in args.run_number:
                         fq_to_rename_2 = "out/cat/" + id_cat_2
 
                 # Process bcl files from NextSeq500. Output are NOT splitted by lane and fastq files for indexes are generated
-                elif(str(row['origin']) in ['bcl', 'bcl_no_mismatch'] and str(row['type']) not in ['scRNA', 'scRNA_HTO', 'cellplex']):
-                    if(str(row['origin']) in ['bcl']):
+                elif(str(row['Origin']) in ['bcl', 'bcl_no_mismatch'] and str(row['type']) not in ['scRNA-seq', 'cellplex', 'snRNA-seq']):
+                    if(str(row['Origin']) in ['bcl']):
                         bcl_prefix = "out/bcl2fastq/_--no-lane-splitting_--create-fastq-for-index-reads/" + ACCESSION + "/" + str(row['Sample_Project']) + "/" + str(row["Sample_ID"]) + "/" + str(row["Sample_Name"]) + "_S" + str(int(row["Sample_Well"]))
                     else:
                         bcl_prefix = "out/bcl2fastq/_--no-lane-splitting_--barcode-mismatches_0/" + ACCESSION + "/" + str(row['Sample_Project']) + "/" + str(row["Sample_ID"]) + "/" + str(row["Sample_Name"]) + "_S" + str(int(row["Sample_Well"]))
@@ -115,7 +115,7 @@ for run in args.run_number:
                     FILE_TO_REMOVE.append(os.path.dirname(os.path.dirname(os.path.dirname(bcl_prefix))))
 
                 # Add case for scrna_bcl
-                elif(str(row['origin']) == 'bcl' and str(row['type']) in ['scRNA', 'scRNA_HTO', 'cellplex']):
+                elif(str(row['Origin']) == 'bcl' and str(row['type']) in ['scRNA','cellplex', 'snRNA-seq']):
                     bcl_prefix = "out/cellranger/mkfastq/" + ACCESSION + "/" + "_".join(str(row['Sample_Project']).split("_")[0:2]) + "/outs/fastq_path/" + str(row['Sample_Project']) + "/" + str(row["Sample_ID"]) + "/" + str(row["Sample_Name"])  + "_S" + str(int(row["Sample_Well"]))
                     bcl_prefix = bcl_prefix.replace('//','/')
 
@@ -134,7 +134,7 @@ for run in args.run_number:
 
                     FILE_TO_REMOVE.append(bcl_prefix)
 
-                elif str(row['origin']) == 'sra':
+                elif str(row['Origin']) == 'sra':
                     INPUT_FASTQ_PREFIX = "out/sra-tools/fastq-dump_" + SE_OR_PE + "/" + ACCESSION
                     if SE_OR_PE == 'se':
                         fq_to_rename = INPUT_FASTQ_PREFIX + ".fastq.gz"
@@ -243,7 +243,7 @@ for run in args.run_number:
 
                 # (5
                 # Assemblies for each specie keyword should be defined here
-                SPECIE = str(row['specie'])
+                SPECIE = str(row['Specie'])
                 if SPECIE in ['human', 'Human', 'Homo_sapiens']:
                     assembly_list = ["GRCh38", "hg19"]
                     gsize = "hs"
@@ -271,21 +271,21 @@ for run in args.run_number:
                 # 5)
 
                 # Processing of single-cell RNA-seq
-                scRNA_samples = samples[(samples['process'].isin(['yes','done'])) & (samples['type'] == 'scRNA')].Sample_Project.unique()
+                scRNA_samples = samples[(samples['Process'].isin(['yes','done'])) & (samples['Type'].isin(['scRNA-seq', 'Cellplex', 'snRNA-seq'])].Sample_Project.unique()
                 for scRNA_project in scRNA_samples:
-                    project_samples = samples[(samples['process'].isin(['yes','done'])) & (samples['Sample_Project'] == scRNA_project)]
+                    project_samples = samples[(samples['Process'].isin(['yes','done'])) & (samples['Sample_Project'] == scRNA_project)]
                     # Run cellranger count on cellranger mkfastq output
-                    if project_samples['analysis_type'].all() in ['Demultiplexage_Concatenation_Quantification_QC']:
+                    if project_samples['Analysis_type'].all() in ['Demultiplexage_Concatenation_Quantification_QC']:
                         # Loop on sample to run cellranger count on each sample
                         SAMPLES = project_samples['Sample_Name']
                         protected_underscore_line = "cellranger/count\t"
                         samples_to_protect = []
                         for SAMPLE in SAMPLES:
                             samples_to_protect.append(SAMPLE)
-                            SPECIE = str(project_samples['specie'].unique()[0])
-                            ACCESSION = str(project_samples['accession'].unique()[0])
-                            PROCESS = str(project_samples['process'].unique()[0])
-                            RUN = str(int(project_samples['run'].unique()[0]))
+                            SPECIE = str(project_samples['Specie'].unique()[0])
+                            ACCESSION = str(project_samples['Accession'].unique()[0])
+                            PROCESS = str(project_samples['Process'].unique()[0])
+                            RUN = str(int(project_samples['Run'].unique()[0]))
                             # Checking specie to process.
                             # For now, on the platform we process only human and mouse.
                             if SPECIE in ['human', 'Human', 'Homo_sapiens']:
@@ -325,7 +325,7 @@ LIST = transform(FILE_TO_REMOVE)
 FINAL_LIST = list(set(functools.reduce(operator.iconcat, LIST, [])))
 
 for el in FINAL_LIST:
-    el_to_remove = mw_path + "mw-sst/" + el
+    el_to_remove = mw_path + "/mw-tgml/" + el
     try:
         os.remove(el_to_remove)
     except OSError:
