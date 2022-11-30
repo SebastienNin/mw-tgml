@@ -1,0 +1,20 @@
+name: mw_snakemake
+channels:
+ - conda-forge
+ - bioconda
+ - defaults
+dependencies:
+ - tmux
+ - snakemake=5.18
+ - git
+ - graphviz
+ - rpy2
+ - pandas
+ - xlrd # needed to load excel file with pandas
+ - numpy
+ - biopython
+ - conda
+ - coreutils
+ - rust
+ - openssh
+ - openpyxl
