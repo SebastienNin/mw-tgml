@@ -14,7 +14,8 @@ if os.path.isfile("../mw-tgml/Sequencing_summary.xlsx"):
     # Get samples to process, i.e those with type == cellplex
     samples_cellplex_1 = samples[samples['Type'].isin(['Cellplex'])]
     samples_cellplex_2 = samples_cellplex_1[samples_cellplex_1['Process'].isin(['yes'])]
-    samples_cellplex = samples_cellplex_2
+    samples_cellplex_3 = samples_cellplex_2[samples_cellplex_2['Analysis_type'].isin(['Demultiplexage_Concatenation_Quantification_QC', 'Concatenation_Quantification_QC'])]
+    samples_cellplex = samples_cellplex_3
 
     experiments_cellplex = samples_cellplex.Accession.unique()
     specie = samples_cellplex.Specie.unique()
@@ -43,11 +44,12 @@ if os.path.isfile("../mw-tgml/Sequencing_summary.xlsx"):
         # Add expected cell number
         #expected_cell_nb_list = str(int(current_df.Expected_cell_number.unique()[0]))
         #print(expected_cell_nb_list)
-        info_to_write = info_to_write + "expect-cells," + str(int(current_df.Expected_cell_number.unique()[0])) + "\n\n" 
+        #info_to_write = info_to_write + "expect-cells," + str(int(current_df.Expected_cell_number.unique()[0])) + "\n\n" 
         info_to_write = info_to_write + "[libraries]\nfastq_id,fastqs,feature_types\n"
         
         for index, row in current_df.iterrows():
-            info_to_write = info_to_write + row['Sample_Name'] + "," + os.getcwd() + "/out/cellranger/mkfastq" + row['Accession'] + "/" + "_".join(str(row['Sample_Project']).split("_")[0:2]) + "/outs/fastq_path/" + str(row['Sample_Project']) + "/" + str(row['Sample_ID']) + "," + row['Cellplex_feature_type'] + "\n"
+            info_to_write = info_to_write + row['Sample_Name'] + "," + os.getcwd() + "/out/cellranger/mkfastq" + row['Accession'] + "/" + "_".join(str(row['Run_Name']).split("_")[0:2]) + "/outs/fastq_path/" + str(row['Run_Name']) + "/" + str(row['Sample_ID']) + "," + row['Cellplex_feature_type'] + "\n"
+            #info_to_write = info_to_write + row['Sample_Name'] + "," + os.getcwd() + "/out/cellranger/mkfastq" + row['Accession'] + "/" + "_".join(str(row['Run_Name']).split("_")[0:2]) + "/outs/fastq_path/" + "," + row['Cellplex_feature_type'] + "\n"
 
         info_to_write = info_to_write + "\n[samples]\nsample_id,cmo_ids,description\n" 
 

@@ -18,3 +18,4 @@ dependencies:
  - rust
  - openssh
  - openpyxl
+ - python=3.6

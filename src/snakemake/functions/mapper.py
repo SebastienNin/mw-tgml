@@ -33,7 +33,7 @@ else:
             SE_OR_PE = str(row['Se_or_Pe'])
             SAMPLE_NAME = str(row['sample_name'])
             EXP = str(row['Exp'])
-            PROJECT = str(row['Sample_Project'])
+            PROJECT = str(row['Run_Name'])
             CELL_TYPE = str(row['Cell_type'])
             CUSTOMER = str(row['Customer'])
             ACCESSION = str(row['Accession'])
@@ -93,11 +93,11 @@ else:
                     fq_to_rename_2 = "out/cat/" + id_cat_2
 
             # Process bcl files from NextSeq500. Output are NOT splitted by lane and fastq files for indexes are generated
-            elif(str(row['Origin']) in ['bcl', 'bcl_no_mismatch'] and str(row['Type']) not in ['scRNA', 'scRNA_HTO', 'Cellplex']):
+            elif(str(row['Origin']) in ['bcl', 'bcl_no_mismatch'] and str(row['Type']) not in ['scRNA-seq', 'Cellplex', 'snRNA-seq']):
                 if(str(row['Origin']) in ['bcl']):
-                    bcl_prefix = "out/bcl2fastq/_--no-lane-splitting_--create-fastq-for-index-reads/" + ACCESSION + "/" + str(row['Sample_Project']) + "/" + str(row["Sample_ID"]) + "/" + str(row["Sample_Name"]) + "_S" + str(int(row["Sample_Well"]))
+                    bcl_prefix = "out/bcl2fastq/_--no-lane-splitting_--create-fastq-for-index-reads/" + ACCESSION + "/" + str(row['Run_Name']) + "/" + str(row["Sample_ID"]) + "/" + str(row["Sample_Name"]) + "_S" + str(int(row["Sample_Well"]))
                 else:
-                    bcl_prefix = "out/bcl2fastq/_--no-lane-splitting_--barcode-mismatches_0/" + ACCESSION + "/" + str(row['Sample_Project']) + "/" + str(row["Sample_ID"]) + "/" + str(row["Sample_Name"]) + "_S" + str(int(row["Sample_Well"]))
+                    bcl_prefix = "out/bcl2fastq/_--no-lane-splitting_--barcode-mismatches_0/" + ACCESSION + "/" + str(row['Run_Name']) + "/" + str(row["Sample_ID"]) + "/" + str(row["Sample_Name"]) + "_S" + str(int(row["Sample_Well"]))
                 bcl_prefix = bcl_prefix.replace('//','/')
 
                 if SE_OR_PE == 'se':
@@ -107,8 +107,9 @@ else:
                     fq_to_rename_2 = bcl_prefix + "_R2_001.fastq.gz"
 
             # Add case for scrna_bcl
-            elif(str(row['Origin']) == 'bcl' and str(row['Type']) in ['scRNA', 'scRNA_HTO', 'Cellplex']):
-                bcl_prefix = "out/cellranger/mkfastq/" + ACCESSION + "/" + "_".join(str(row['Sample_Project']).split("_")[0:2]) + "/outs/fastq_path/" + str(row['Sample_Project']) + "/" + str(row["Sample_ID"]) + "/" + str(row["Sample_Name"])  + "_S" + str(int(row["Sample_Well"]))
+            elif(str(row['Origin']) == 'bcl' and str(row['Type']) in ['scRNA-seq', 'Cellplex', 'snRNA-seq']):
+                bcl_prefix = "out/cellranger/mkfastq/" + ACCESSION + "/" + "_".join(str(row['Run_Name']).split("_")[0:2]) + "/outs/fastq_path/" + str(row['Run_Name']) + "/" + str(row["Sample_ID"]) + "/" + str(row["Sample_Name"])  + "_S" + str(int(row["Sample_Well"]))
+                #bcl_prefix = "out/cellranger/mkfastq/" + ACCESSION + "/" + "_".join(str(row['Run_Name']).split("_")[0:2]) + "/outs/fastq_path/" + str(row["Sample_Name"])  + "_S" + str(int(row["Sample_Well"]))
                 bcl_prefix = bcl_prefix.replace('//','/')
 
                 # scRNA-seq can't be se, if SE_OR_PE == 'se', throw an error
@@ -327,12 +328,12 @@ else:
 
                             #ln_aligned_unspecif_paths.append(ln_rseqc_path)
 
-                        if PROCESS == 'yes' and row['Type'] not in ['RNA_fq_only', 'ChIP_fq_only', 'scRNA', 'scRNA_HTO', 'Cellplex', 'Demultiplexage_Concatenation_QC']:
+                        if PROCESS == 'yes' and row['Type'] not in [ 'scRNA-seq', 'Cellplex']:
                             mwconf['targets'].append(ln_aligned_unspecif_paths)
 
                     # (7
                     # Targets for files specific of ChIP-like approaches.
-                    if row['Type'] in ['ChIP','ATAC','FAIRE','DNASE','MNase'] and row['Analysis_type'] not in ['Demultiplexage_Concatenation_QC', 'Concatenation_QC']:
+                    if row['Type'] in ['ChIP-seq','ATAC-seq','FAIRE-seq','DNASE-seq','MNase-seq'] and row['Analysis_type'] not in ['Demultiplexage_Concatenation_QC', 'Concatenation_QC']:
                         mw_chip_qc_fingerprint_prefix = "out/deepTools/plotFingerprint/" + aligned_stem
                         mw_chip_qc_fingerprint_metrics = mw_chip_qc_fingerprint_prefix + ".metrics.tsv"
                         mw_chip_qc_fingerprint_counts = mw_chip_qc_fingerprint_prefix + ".counts.tsv"
@@ -418,18 +419,18 @@ else:
                                     mwconf['targets'].append(ln_path)
                         # 9)
     # (10
-    # Add here treatment by exp for RNA-Seq
-    # Only works if exp (column Q) as been specified
-    rna_exps = samples[(samples['Process'].isin(['yes'])) & samples['Type'].isin(['RNA']) & (samples['Exp'] != '')].Exp.unique()
-    rna_exps_to_process = samples[(samples['Process'].isin(['yes'])) & samples['Type'].isin(['RNA']) & (samples['Exp'] != '')].Exp.unique()
+    # Add here treatment by run for RNA-Seq
+    rna_exps = samples[(samples['Process'].isin(['yes'])) & samples['Type'].isin(['RNA-seq']) & (samples['Run'] != '')].Run.unique()
+    rna_exps_to_process = samples[(samples['Process'].isin(['yes'])) & samples['Type'].isin(['RNA-seq']) & (samples['Run'] != '')  & samples['Analysis_type'].isin(['Demultiplexage_Concatenation_Quantification_QC', 'Concatenation_Quantification_QC'])].Run.unique()
 
-    for rna_exp in rna_exps:
-        rna_exp_samples = samples[(samples['Process'].isin(['yes','done'])) & (samples['Exp'] == rna_exp)]
+    for rna_exp_float in rna_exps:
+        rna_exp = str(rna_exp_float)
+        rna_exp_samples = samples[(samples['Process'].isin(['yes','done'])) & (samples['Run'] == rna_exp) & samples['Analysis_type'].isin(['Demultiplexage_Concatenation_Quantification_QC', 'Concatenation_Quantification_QC'])]
 
-        if len(rna_exp_samples.specie.unique()) != 1:
+        if len(rna_exp_samples.Specie.unique()) != 1:
             eprint('More than one specie for this RNA experiment ' + str(rna_exp) + '. Analysis steps involving all the samples from this experiment are skipped. There is likely an error in your Sequencing_summary.xlsx')
         else:
-            SPECIE = rna_exp_samples.specie.unique()
+            SPECIE = rna_exp_samples.Specie.unique()
             if SPECIE in ['human', 'Human', 'Homo_sapiens']:
                 assemblies = ["GRCh38", "hg19"]
             elif SPECIE in ['mouse', 'Mouse', 'Mus_musculus']:
@@ -477,11 +478,11 @@ else:
                         mwconf["targets"].append(ln_rseqc_tin_path)
 
     # Processing of single-cell RNA-seq
-    scRNA_samples = samples[(samples['Process'].isin(['yes'])) & (samples['Type'] == 'scRNA')].Sample_Project.unique()
+    scRNA_samples = samples[(samples['Process'].isin(['yes'])) & (samples['Type'].isin(['scRNA-seq', 'snRNA-seq']))].Run_Name.unique()
     for scRNA_project in scRNA_samples:
-        project_samples = samples[(samples['Process'].isin(['yes'])) & (samples['Sample_Project'] == scRNA_project)]
+        project_samples = samples[(samples['Process'].isin(['yes'])) & (samples['Run_Name'] == scRNA_project)]
         # Run cellranger count on cellranger mkfastq output
-        if project_samples['Analysis_type'].all() in ['Demultiplexage_Concatenation_Quantification_QC']:
+        if project_samples['Analysis_type'].all() and project_samples['Analysis_type'].unique() in ['Concatenation_Quantification_QC', 'Demultiplexage_Concatenation_Quantification_QC']:
             # Loop on sample to run cellranger count on each sample
             SAMPLES = project_samples['Sample_Name']
             protected_underscore_line = "cellranger/count\t"
@@ -511,9 +512,10 @@ else:
             # This prevent error when having sample name with space
             # 07-07-2021: doesn't work when multiple scRNA are processed.
             if(str(project_samples['Process'].unique()[0]) == 'yes'):
-                #print(protected_underscore_line)
                 protected_underscore_line = protected_underscore_line + ",".join(samples_to_protect)
                 #print(protected_underscore_line)
+                if not os.path.exists("out/mw"):
+                    os.makedirs("out/mw")
                 protected_underscore_file = open("out/mw/Run_" + RUN  + "_protectedunderscores.tsv", 'w')
                 protected_underscore_file.write("tool\tprotectedunderscore")
                 protected_underscore_file.write("\n")

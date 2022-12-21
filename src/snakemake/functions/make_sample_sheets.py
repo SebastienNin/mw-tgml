@@ -17,11 +17,12 @@ from pathlib import Path
 
 if os.path.isfile("../mw-tgml/Sequencing_summary.xlsx"):
     samples = pandas.read_excel("../mw-tgml/Sequencing_summary.xlsx", sheet_name="samples", engine="openpyxl")
-    samples_from_bcl = samples[samples['Origin'].isin(['bcl', 'bcl_no_mismatch', 'bcl_index_generation'])]
+    samples_process_yes = samples[samples['Process'] == "yes"]
+    samples_from_bcl = samples_process_yes[samples_process_yes['Origin'].isin(['bcl', 'bcl_no_mismatch', 'bcl_index_generation'])]
     # Add adapter file reading and dictionnary creation to add adapter sequences in the samplesheet.
-    if os.path.isfile("../mw-lib/src/snakemake/tables/adapter.tsv"):
+    if os.path.isfile("../mw-tgml/src/snakemake/tables/adapter.tsv"):
         adapter_dict = {}
-        with open("../mw-lib/src/snakemake/tables/adapter.tsv", "r") as adapter_file:
+        with open("../mw-tgml/src/snakemake/tables/adapter.tsv", "r") as adapter_file:
             # Skip first line containing header
             next(adapter_file)
             # Fill the dictionnary with all kits information:   Kit Adapter1    Adapter2
@@ -35,7 +36,8 @@ if os.path.isfile("../mw-tgml/Sequencing_summary.xlsx"):
 
     for experiment in experiments_from_bcl:
         # Variable to get the loop dataframe
-        current_df = samples_from_bcl[samples['Accession'] == experiment]
+        current_df = samples_from_bcl.loc[samples['Accession'] == experiment]
+        current_df.rename({'Run_Name' : 'Sample_Project'}, axis=1, inplace=True)
         kit_used = current_df.Kit_index.unique()[0]
 
         # Condition to determine wether data are single or double indexed
@@ -44,7 +46,8 @@ if os.path.isfile("../mw-tgml/Sequencing_summary.xlsx"):
             bcl2fastq_target = bcl2fastq_prefix + "/Reports/html/tree.html"
             # 8/10/2021 Add fillna to correct an error where I5_Index_ID = NaN but is not detected by str(row['I5_Index_ID']) != "NaN"
             # fillna replace all na by ""
-            data_tmp = current_df[['Sample_ID','Sample_Name','Sample_Plate','Sample_Well','Index_10X','I7_Index_ID','Index', 'I5_Index_ID', 'Index2', 'Sample_Project','Description']].fillna("")
+            #data_tmp = current_df[['Sample_ID','Sample_Name','Sample_Plate','Sample_Well','Index_10X','I7_Index_ID','Index', 'I5_Index_ID', 'Index2', 'Run_Name','Description']].fillna("")
+            data_tmp = current_df[['Sample_ID','Sample_Name','Index_10X','I7_Index_ID','Index', 'I5_Index_ID', 'Index2', 'Sample_Project','Description']].fillna("")
             # 2021 04 07 Update to enable dual indexing demultiplexing. Cellranger can read index name and will replace it by the index sequence. It also detect dual index or single index.
             # 2021-04-23 Update the conditions to detect if samples have double index or not.
             for index, row in data_tmp.iterrows():
@@ -66,12 +69,16 @@ if os.path.isfile("../mw-tgml/Sequencing_summary.xlsx"):
         elif(['bcl_no_mismatch'] in current_df.Origin.unique()):
             bcl2fastq_prefix = "out/bcl2fastq/_--no-lane-splitting_--barcode-mismatches_0/" + experiment
             bcl2fastq_target = bcl2fastq_prefix + "/Reports/html/tree.html"
-            data = current_df[['Sample_ID','Sample_Name','Sample_Plate','Sample_Well','I7_Index_ID','Index','I5_Index_ID','Index2','Sample_Project','Description']]
+            #data = current_df[['Sample_ID','Sample_Name','Sample_Plate','Sample_Well','I7_Index_ID','Index','I5_Index_ID','Index2','Run_Name','Description']]
+            #data = current_df[['Sample_ID','Sample_Name','I7_Index_ID','Index','I5_Index_ID','Index2','Run_Name','Description']]
+            data = current_df[['Sample_ID','Sample_Name','I7_Index_ID','Index','I5_Index_ID','Index2','Sample_Project','Description']]
         else:
             # By default, create the fastq for index reads! Important to use when debugging!
             bcl2fastq_prefix = "out/bcl2fastq/_--no-lane-splitting_--create-fastq-for-index-reads/" + experiment
             bcl2fastq_target = bcl2fastq_prefix + "/Reports/html/tree.html"
-            data = current_df[['Sample_ID','Sample_Name','Sample_Plate','Sample_Well','I7_Index_ID','Index','I5_Index_ID','Index2','Sample_Project','Description']]
+            #data = current_df[['Sample_ID','Sample_Name','Sample_Plate','Sample_Well','I7_Index_ID','Index','I5_Index_ID','Index2','Run_Name','Description']]
+            #data = current_df[['Sample_ID','Sample_Name','I7_Index_ID','Index','I5_Index_ID','Index2','Run_Name','Description']]
+            data = current_df[['Sample_ID','Sample_Name','I7_Index_ID','Index','I5_Index_ID','Index2', 'Sample_Project','Description']]
         
         # Sort by index to prevent trouble with mix of ID and numbers
         data = data.sort_index()
@@ -92,7 +99,7 @@ if os.path.isfile("../mw-tgml/Sequencing_summary.xlsx"):
                 'IEMFileVersion,4\n'
                 'Investigator Name,' + current_df[['Customer']].iloc[0,0]+'\n'
                 'Experiment Name,' + current_df[['Sample_Project']].iloc[0,0]+'\n'
-                'Date,' + str(current_df[['Date_run']]) + '\n'
+                'Date,' + str(current_df[['Date_run']].iloc[0,0]) + '\n'
                 'Workflow,GenerateFASTQ\n'
                 'Application,NextSeq FASTQ Only\n'
                 'Description,' + current_df[['Description']].iloc[0,0]+'\n'
@@ -107,7 +114,7 @@ if os.path.isfile("../mw-tgml/Sequencing_summary.xlsx"):
                 #'AdapterRead2,' + adapter_dict[kit_used][1] + '\n\n'
                 #'[Data]\n')
 
-        if(['scRNA-seq', 'scRNA_HTO', 'Cellplex'] not in current_df.Type.unique()):
+        if(['scRNA-seq', 'snRNA-seq', 'Cellplex'] not in current_df.Type.unique()):
             adapter_content=('[Settings]\n'
          'Adapter,' + adapter_dict[kit_used][0] + '\n'
          'AdapterRead2,' + adapter_dict[kit_used][1] + '\n\n'
