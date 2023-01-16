@@ -19,3 +19,4 @@ dependencies:
  - openssh
  - openpyxl
  - python=3.6
+ - gh

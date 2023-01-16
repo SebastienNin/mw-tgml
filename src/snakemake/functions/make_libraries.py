@@ -79,4 +79,4 @@ if os.path.isfile("../mw-tgml/Sequencing_summary.xlsx"):
             myfile = open(filename, 'w')
             myfile.write(info_to_write)
             myfile.close()
-            mwconf['targets'].append(cellranger_multi_target)
+            mwconf['config_targets'].append(cellranger_multi_target)

@@ -421,12 +421,14 @@ else:
     # (10
     # Add here treatment by run for RNA-Seq
     rna_exps = samples[(samples['Process'].isin(['yes'])) & samples['Type'].isin(['RNA-seq']) & (samples['Run'] != '')].Run.unique()
-    rna_exps_to_process = samples[(samples['Process'].isin(['yes'])) & samples['Type'].isin(['RNA-seq']) & (samples['Run'] != '')  & samples['Analysis_type'].isin(['Demultiplexage_Concatenation_Quantification_QC', 'Concatenation_Quantification_QC'])].Run.unique()
+    #rna_exps = samples[(samples['Process'].isin(['done'])) & samples['Type'].isin(['RNA-seq']) & (samples['Run'] != '')].Run.unique()
+    rna_exps_to_process = samples[(samples['Process'].isin(['yes'])) & samples['Type'].isin(['RNA-seq']) & (samples['Run'] != '') & samples['Analysis_type'].isin(['Demultiplexage_Concatenation_Quantification_QC', 'Concatenation_Quantification_QC'])].Run.unique()
+    
+    print(rna_exps)
 
     for rna_exp_float in rna_exps:
-        rna_exp = str(rna_exp_float)
+        rna_exp = str(int(rna_exp_float))
         rna_exp_samples = samples[(samples['Process'].isin(['yes','done'])) & (samples['Run'] == rna_exp) & samples['Analysis_type'].isin(['Demultiplexage_Concatenation_Quantification_QC', 'Concatenation_Quantification_QC'])]
-
         if len(rna_exp_samples.Specie.unique()) != 1:
             eprint('More than one specie for this RNA experiment ' + str(rna_exp) + '. Analysis steps involving all the samples from this experiment are skipped. There is likely an error in your Sequencing_summary.xlsx')
         else:
@@ -476,6 +478,45 @@ else:
                     if rna_exp in rna_exps_to_process:
                         mwconf["targets"].append(ln_rseqc_genecov_path)
                         mwconf["targets"].append(ln_rseqc_tin_path)
+
+
+    projects = samples[(samples['Process'].isin(['yes','done'])) & (samples['Project'] != '')].Project.unique()
+    for project in projects:
+        project_samples = samples[(samples['Process'].isin(['yes','done'])) & (samples['Project'] == project)]
+
+        if len(project_samples.Specie.unique()) != 1:
+            eprint('More than one specie for this project ' + str(project_samples) + '. There is likely an error in your Sequencing_summary.xlsx.')
+        else:
+            SPECIE = str(row['Specie'])
+            if SPECIE in ['human', 'Human', 'Homo_sapiens']:
+                assemblies = ["GRCh38", "hg19"]
+            elif SPECIE in ['mouse', 'Mouse', 'Mus_musculus']:
+                assemblies = ["GRCm38", "mm9"]
+            elif SPECIE in ['drosophila', 'Fruit_fly', 'Drosophila_melanogaster']:
+                assemblies = ["BDGP6"]
+            elif SPECIE in ['Yeast', 'Saccharomyces_cerevisiae']:
+                assemblies = ["R64-1-1"]
+            elif SPECIE in ['Rat', 'Rattus_norvegicus']:
+                assemblies = ["Rnor6"]
+            elif not pandas.isna(SPECIE):
+                assemblies = [SPECIE]
+
+            for assembly in assemblies:
+                bam_id = "bam-" + assembly + "-project-" + project
+                # Not sure if '_' should absolutely by replaced by '-'
+                bam_id = bam_id.replace('_','-')
+                bam_paths = str(["out/ln/alias/sst/all_samples/" + assembly + "/bam/" + sample + ".bam" for sample in project_samples.Sample_name])
+                mwconf['ids'][bam_id] = bam_paths
+
+                bed_broad_id = "bed-broad-" + assembly + "-project-" + project
+                bed_broad_id_with_ext = bed_broad_id + ".bed"
+                bed_broad_paths = str(["out/ln/alias/sst/all_samples/" + assembly + "/bed/broad/" + sample + "_peaks.bed" for sample in project_samples.Sample_name])
+                mwconf['ids'][bed_broad_id_with_ext] = bed_broad_paths
+
+                merged_bed_broad_path = str(["out/bedtools/merge/sort/_-k1,1_-k2,2n/cat/" + bed_broad_id_with_ext])
+                #print(merged_bed_broad_path)
+                merged_bed_broad_id = "bed-merged-broad-" + assembly + "-project-" + project
+                mwconf['ids'][merged_bed_broad_id] = merged_bed_broad_path
 
     # Processing of single-cell RNA-seq
     scRNA_samples = samples[(samples['Process'].isin(['yes'])) & (samples['Type'].isin(['scRNA-seq', 'snRNA-seq']))].Run_Name.unique()
