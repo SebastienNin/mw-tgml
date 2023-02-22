@@ -257,6 +257,8 @@ else:
                 gsize = "12e6"
             elif SPECIE in ['Rat', 'Rattus_norvegicus']:
                 assembly_list = ["Rnor6"]
+            elif SPECIE in ["Xenopus_tropicalis"]:
+                assembly_list = ["Xtro-10-0"]
             elif not pandas.isna(SPECIE):
                 assembly_list = [SPECIE]
             else:
@@ -275,6 +277,8 @@ else:
                     # Only run this part if analysis_type is Demultiplexage_Concatenation_Quantification_QC
                     if row['Analysis_type'] in ['Demultiplexage_Concatenation_QC', 'Concatenation_QC']:
                         continue
+                    elif row['Type'] == 'RNA-seq':
+                        aligned_stem = "samtools/index/star/" + row['Se_or_Pe'] + "_fastq.gz_to_bam_standard_staridx-" + assembly + "-merge-attr-retrieve-ensembl_gtf-" + assembly +"-merge-attr-retrieve-ensembl/sickle/" + row['Se_or_Pe'] + "_-t_sanger_-q_20/ln/alias/" + fq_stem
                     else:
                         bowtie2_stem = "bowtie2/" + row['Se_or_Pe'] + "_" + assembly + "/sickle/" + row['Se_or_Pe'] + "_-t_sanger_-q_20/ln/alias/" + fq_stem
                         bowtie2_log_path = "out/" + bowtie2_stem + ".log"
@@ -285,7 +289,7 @@ else:
                     mw_idxstat_path = "out/samtools/idxstats/" + aligned_stem + ".idxstat.tsv"
                     mw_bw_path = "out/deepTools/bamCoverage_--binSize_20_--minMappingQuality_0_--normalizeUsing_RPKM/" + aligned_stem + ".bw"
 
-                    if row['Type'] == 'RNA':
+                    if row['Type'] == 'RNA-seq':
                         mw_bw_fwd_path = "out/deepTools/bamCoverage_--binSize_20_--minMappingQuality_0_--normalizeUsing_RPKM_--filterRNAstrand_forward/" + aligned_stem + ".bw"
                         mw_bw_rev_path = "out/deepTools/bamCoverage_--binSize_20_--minMappingQuality_0_--normalizeUsing_RPKM_--filterRNAstrand_reverse/" + aligned_stem + ".bw"
                         # 2021-03-25 Add rseqc geneBody_coverage
@@ -310,7 +314,7 @@ else:
 
                         ln_aligned_unspecif_paths = [ln_bam_path, ln_bai_path, ln_idxstat_path, ln_bw_path]
 
-                        if row['Type'] == 'RNA':
+                        if row['Type'] == 'RNA-seq':
                             bw_fwd_suffix = aligned_stem_dict[k] + "/bw/stranded/" + SAMPLE_NAME + "_fwd.bw"
                             mwconf['ids'][bw_fwd_suffix] = mw_bw_fwd_path
                             ln_bw_fwd_path = "out/ln/alias/" + bw_fwd_suffix
@@ -423,16 +427,14 @@ else:
     rna_exps = samples[(samples['Process'].isin(['yes'])) & samples['Type'].isin(['RNA-seq']) & (samples['Run'] != '')].Run.unique()
     #rna_exps = samples[(samples['Process'].isin(['done'])) & samples['Type'].isin(['RNA-seq']) & (samples['Run'] != '')].Run.unique()
     rna_exps_to_process = samples[(samples['Process'].isin(['yes'])) & samples['Type'].isin(['RNA-seq']) & (samples['Run'] != '') & samples['Analysis_type'].isin(['Demultiplexage_Concatenation_Quantification_QC', 'Concatenation_Quantification_QC'])].Run.unique()
-    
-    print(rna_exps)
-
+   
     for rna_exp_float in rna_exps:
         rna_exp = str(int(rna_exp_float))
-        rna_exp_samples = samples[(samples['Process'].isin(['yes','done'])) & (samples['Run'] == rna_exp) & samples['Analysis_type'].isin(['Demultiplexage_Concatenation_Quantification_QC', 'Concatenation_Quantification_QC'])]
-        if len(rna_exp_samples.Specie.unique()) != 1:
+        rna_exp_samples = samples[(samples['Process'].isin(['yes','done'])) & (samples['Run'] == rna_exp_float) & samples['Analysis_type'].isin(['Demultiplexage_Concatenation_Quantification_QC', 'Concatenation_Quantification_QC'])]
+        if len(rna_exp_samples.Specie.unique()) > 1:
             eprint('More than one specie for this RNA experiment ' + str(rna_exp) + '. Analysis steps involving all the samples from this experiment are skipped. There is likely an error in your Sequencing_summary.xlsx')
         else:
-            SPECIE = rna_exp_samples.Specie.unique()
+            SPECIE = str(rna_exp_samples.Specie.unique())
             if SPECIE in ['human', 'Human', 'Homo_sapiens']:
                 assemblies = ["GRCh38", "hg19"]
             elif SPECIE in ['mouse', 'Mouse', 'Mus_musculus']:
@@ -441,19 +443,19 @@ else:
                 assemblies = ["BDGP6"]
             elif SPECIE in ['Yeast', 'Saccharomyces_cerevisiae']:
                 assemblies = ["R64-1-1"]
-            elif SPECIE in ['Rat']:
+            elif SPECIE in ['Rat', 'Rattus_norvegicus']:
                 assemblies = ["Rnor6"]
+            elif SPECIE in ["Xenopus_tropicalis"]:
+                assemblies = ["Xtro-10-0"]
             elif not pandas.isna(SPECIE):
                 assemblies = [SPECIE]
-
             for assembly in assemblies:
-                bam_id = bam_list_id = "bam-" + assembly + "-" + rna_exp
+                bam_id = bam_list_id = "bam-" + assembly + "-Run-" + rna_exp
                 # Not sure if '_' should absolutely by replaced by '-'
                 bam_id = bam_id.replace('_','-')
                 bam_paths = str(["out/ln/alias/tgml/all_samples/" + assembly + "/bam/" + sample + ".bam" for sample in rna_exp_samples.sample_name])
                 mwconf['ids'][bam_id] = bam_paths
                 mwconf['ids'][bam_list_id] = bam_paths
-                
                 for norm in ["raw", "rpkm"]:
                     mw_path = "out/r/tidy_featureCounts/subread/featureCounts_-O_-t_exon_-g_merge_gene_id_name_gtf-" + assembly + "-merge-attr-retrieve-ensembl_" + bam_id + "_" + norm + ".tsv"
                     for stem in ["tgml/all_samples/", "tgml/by_type_and_exp/RNA/" + rna_exp + "/"]:
@@ -484,7 +486,7 @@ else:
     for project in projects:
         project_samples = samples[(samples['Process'].isin(['yes','done'])) & (samples['Project'] == project)]
 
-        if len(project_samples.Specie.unique()) != 1:
+        if len(project_samples.Specie.unique()) > 1:
             eprint('More than one specie for this project ' + str(project_samples) + '. There is likely an error in your Sequencing_summary.xlsx.')
         else:
             SPECIE = str(row['Specie'])
@@ -498,6 +500,8 @@ else:
                 assemblies = ["R64-1-1"]
             elif SPECIE in ['Rat', 'Rattus_norvegicus']:
                 assemblies = ["Rnor6"]
+            elif SPECIE in ["Xenopus_tropicalis"]:
+                assemblies = ["Xtro-10-0"]
             elif not pandas.isna(SPECIE):
                 assemblies = [SPECIE]
 
