@@ -484,43 +484,46 @@ else:
 
     projects = samples[(samples['Process'].isin(['yes','done'])) & (samples['Project'] != '')].Project.unique()
     for project in projects:
-        project_samples = samples[(samples['Process'].isin(['yes','done'])) & (samples['Project'] == project)]
-
-        if len(project_samples.Specie.unique()) > 1:
-            eprint('More than one specie for this project ' + str(project_samples) + '. There is likely an error in your Sequencing_summary.xlsx.')
+        if(numpy.isnan(project)):
+            continue
         else:
-            SPECIE = str(row['Specie'])
-            if SPECIE in ['human', 'Human', 'Homo_sapiens']:
-                assemblies = ["GRCh38", "hg19"]
-            elif SPECIE in ['mouse', 'Mouse', 'Mus_musculus']:
-                assemblies = ["GRCm38", "mm9"]
-            elif SPECIE in ['drosophila', 'Fruit_fly', 'Drosophila_melanogaster']:
-                assemblies = ["BDGP6"]
-            elif SPECIE in ['Yeast', 'Saccharomyces_cerevisiae']:
-                assemblies = ["R64-1-1"]
-            elif SPECIE in ['Rat', 'Rattus_norvegicus']:
-                assemblies = ["Rnor6"]
-            elif SPECIE in ["Xenopus_tropicalis"]:
-                assemblies = ["Xtro-10-0"]
-            elif not pandas.isna(SPECIE):
-                assemblies = [SPECIE]
+            project_samples = samples[(samples['Process'].isin(['yes','done'])) & (samples['Project'] == project)]
 
-            for assembly in assemblies:
-                bam_id = "bam-" + assembly + "-project-" + project
-                # Not sure if '_' should absolutely by replaced by '-'
-                bam_id = bam_id.replace('_','-')
-                bam_paths = str(["out/ln/alias/sst/all_samples/" + assembly + "/bam/" + sample + ".bam" for sample in project_samples.Sample_name])
-                mwconf['ids'][bam_id] = bam_paths
+            if len(project_samples.Specie.unique()) > 1:
+                eprint('More than one specie for this project ' + str(project_samples) + '. There is likely an error in your Sequencing_summary.xlsx.')
+            else:
+                SPECIE = str(row['Specie'])
+                if SPECIE in ['human', 'Human', 'Homo_sapiens']:
+                    assemblies = ["GRCh38", "hg19"]
+                elif SPECIE in ['mouse', 'Mouse', 'Mus_musculus']:
+                    assemblies = ["GRCm38", "mm9"]
+                elif SPECIE in ['drosophila', 'Fruit_fly', 'Drosophila_melanogaster']:
+                    assemblies = ["BDGP6"]
+                elif SPECIE in ['Yeast', 'Saccharomyces_cerevisiae']:
+                    assemblies = ["R64-1-1"]
+                elif SPECIE in ['Rat', 'Rattus_norvegicus']:
+                    assemblies = ["Rnor6"]
+                elif SPECIE in ["Xenopus_tropicalis"]:
+                    assemblies = ["Xtro-10-0"]
+                elif not pandas.isna(SPECIE):
+                    assemblies = [SPECIE]
+    
+                for assembly in assemblies:
+                    bam_id = "bam-" + assembly + "-project-" + str(project)
+                    # Not sure if '_' should absolutely by replaced by '-'
+                    bam_id = bam_id.replace('_','-')
+                    bam_paths = str(["out/ln/alias/sst/all_samples/" + assembly + "/bam/" + sample + ".bam" for sample in project_samples.Sample_name])
+                    mwconf['ids'][bam_id] = bam_paths
+    
+                    bed_broad_id = "bed-broad-" + assembly + "-project-" + project
+                    bed_broad_id_with_ext = bed_broad_id + ".bed"
+                    bed_broad_paths = str(["out/ln/alias/sst/all_samples/" + assembly + "/bed/broad/" + sample + "_peaks.bed" for sample in project_samples.Sample_name])
+                    mwconf['ids'][bed_broad_id_with_ext] = bed_broad_paths
 
-                bed_broad_id = "bed-broad-" + assembly + "-project-" + project
-                bed_broad_id_with_ext = bed_broad_id + ".bed"
-                bed_broad_paths = str(["out/ln/alias/sst/all_samples/" + assembly + "/bed/broad/" + sample + "_peaks.bed" for sample in project_samples.Sample_name])
-                mwconf['ids'][bed_broad_id_with_ext] = bed_broad_paths
-
-                merged_bed_broad_path = str(["out/bedtools/merge/sort/_-k1,1_-k2,2n/cat/" + bed_broad_id_with_ext])
-                #print(merged_bed_broad_path)
-                merged_bed_broad_id = "bed-merged-broad-" + assembly + "-project-" + project
-                mwconf['ids'][merged_bed_broad_id] = merged_bed_broad_path
+                    merged_bed_broad_path = str(["out/bedtools/merge/sort/_-k1,1_-k2,2n/cat/" + bed_broad_id_with_ext])
+                    #print(merged_bed_broad_path)
+                    merged_bed_broad_id = "bed-merged-broad-" + assembly + "-project-" + project
+                    mwconf['ids'][merged_bed_broad_id] = merged_bed_broad_path
 
     # Processing of single-cell RNA-seq
     scRNA_samples = samples[(samples['Process'].isin(['yes'])) & (samples['Type'].isin(['scRNA-seq', 'snRNA-seq']))].Run_Name.unique()
