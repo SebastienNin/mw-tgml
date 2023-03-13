@@ -17,9 +17,9 @@ current_cluster = socket.gethostname()
 if current_cluster == "sacapus":
     mw_path = "/gpfs/tgml/"
 elif current_cluster == "bigmemorix":
-    mw_path = "/data/TGML"
+    mw_path = "/data/TGML/"
 else:  
-    mw_path = "/gpfs/tgml"
+    mw_path = "/gpfs/tgml/"
 
 # Transform irregular 2D list into a regular one.
 def transform(nested_list):
@@ -271,7 +271,7 @@ for run in args.run_number:
                 # 5)
 
                 # Processing of single-cell RNA-seq
-                scRNA_samples = samples[(samples['Process'].isin(['yes','done'])) & (samples['Type'].isin(['scRNA-seq', 'Cellplex', 'snRNA-seq'])].Sample_Project.unique()
+                scRNA_samples = samples[(samples['Process'].isin(['yes','done'])) & (samples['Type'].isin(['scRNA-seq', 'Cellplex', 'snRNA-seq']))].Sample_Project.unique()
                 for scRNA_project in scRNA_samples:
                     project_samples = samples[(samples['Process'].isin(['yes','done'])) & (samples['Sample_Project'] == scRNA_project)]
                     # Run cellranger count on cellranger mkfastq output
