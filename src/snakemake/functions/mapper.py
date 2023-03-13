@@ -10,6 +10,10 @@ if not os.path.isfile("../mw-tgml/Sequencing_summary.xlsx"):
 else:
     samples = pandas.read_excel("../mw-tgml/Sequencing_summary.xlsx", sheet_name="samples", engine='openpyxl')
     samples.Type.fillna("Unknown", inplace=True)
+    samples = samples.dropna(subset=['Sample_Name'])
+    samples['Run'] = samples['Run'].astype(int)
+
+    samples = samples.loc[samples['Process'] == 'yes']
 
     if "Analysis_type" not in samples:
         samples['Analysis_type'] = "default"
@@ -424,17 +428,25 @@ else:
                         # 9)
     # (10
     # Add here treatment by run for RNA-Seq
-    rna_exps = samples[(samples['Process'].isin(['yes'])) & samples['Type'].isin(['RNA-seq']) & (samples['Run'] != '')].Run.unique()
+    rna_exps_with_point = samples[(samples['Process'].isin(['yes'])) & samples['Type'].isin(['RNA-seq']) & (samples['Run'] != '')].Run.unique()
+    rna_exps = [str(int(exps)).replace('\.', '') for exps in rna_exps_with_point] 
     #rna_exps = samples[(samples['Process'].isin(['done'])) & samples['Type'].isin(['RNA-seq']) & (samples['Run'] != '')].Run.unique()
     rna_exps_to_process = samples[(samples['Process'].isin(['yes'])) & samples['Type'].isin(['RNA-seq']) & (samples['Run'] != '') & samples['Analysis_type'].isin(['Demultiplexage_Concatenation_Quantification_QC', 'Concatenation_Quantification_QC'])].Run.unique()
-   
+    rna_exps_to_process = [str(int(exps)).replace('\.', '') for exps in rna_exps_to_process] 
+
     for rna_exp_float in rna_exps:
-        rna_exp = str(int(rna_exp_float))
-        rna_exp_samples = samples[(samples['Process'].isin(['yes','done'])) & (samples['Run'] == rna_exp_float) & samples['Analysis_type'].isin(['Demultiplexage_Concatenation_Quantification_QC', 'Concatenation_Quantification_QC'])]
+        rna_exp = int(rna_exp_float)
+        rna_exp_str = str(int(rna_exp_float))
+        rna_exp_samples = samples[(samples['Process'].isin(['yes'])) & (samples['Run'] == rna_exp) & samples['Analysis_type'].isin(['Demultiplexage_Concatenation_Quantification_QC', 'Concatenation_Quantification_QC'])]
+
+        lib_type = rna_exp_samples["Se_or_Pe"]
         if len(rna_exp_samples.Specie.unique()) > 1:
             eprint('More than one specie for this RNA experiment ' + str(rna_exp) + '. Analysis steps involving all the samples from this experiment are skipped. There is likely an error in your Sequencing_summary.xlsx')
+        elif len(rna_exp_samples.Specie.unique()) == 0 :
+            eprint("No Specie found.")
         else:
-            SPECIE = str(rna_exp_samples.Specie.unique())
+            # SHould always work as we check if Specie.unique > 1
+            SPECIE = str(rna_exp_samples.Specie.unique()[0])
             if SPECIE in ['human', 'Human', 'Homo_sapiens']:
                 assemblies = ["GRCh38", "hg19"]
             elif SPECIE in ['mouse', 'Mouse', 'Mus_musculus']:
@@ -450,19 +462,23 @@ else:
             elif not pandas.isna(SPECIE):
                 assemblies = [SPECIE]
             for assembly in assemblies:
-                bam_id = bam_list_id = "bam-" + assembly + "-Run-" + rna_exp
+                bam_id = bam_list_id = "bam-" + assembly + "-Run-" + rna_exp_str
                 # Not sure if '_' should absolutely by replaced by '-'
                 bam_id = bam_id.replace('_','-')
                 bam_paths = str(["out/ln/alias/tgml/all_samples/" + assembly + "/bam/" + sample + ".bam" for sample in rna_exp_samples.sample_name])
                 mwconf['ids'][bam_id] = bam_paths
                 mwconf['ids'][bam_list_id] = bam_paths
-                for norm in ["raw", "rpkm"]:
-                    mw_path = "out/r/tidy_featureCounts/subread/featureCounts_-O_-t_exon_-g_merge_gene_id_name_gtf-" + assembly + "-merge-attr-retrieve-ensembl_" + bam_id + "_" + norm + ".tsv"
-                    for stem in ["tgml/all_samples/", "tgml/by_type_and_exp/RNA/" + rna_exp + "/"]:
-                        id_suffix = stem + assembly + "-merge-attr-retrieve/counts/" + rna_exp + "_" + norm + ".tsv"
-                        mwconf['ids'][id_suffix] = mw_path
 
-                        if rna_exp in rna_exps_to_process:
+                for norm in ["raw", "rpkm"]:
+                    if(lib_type.all() == "se"):
+                        mw_path = "out/r/tidy_featureCounts/subread/featureCounts_-O_-t_exon_-g_merge_gene_id_name_gtf-" + assembly + "-merge-attr-retrieve-ensembl_" + bam_id + "_" + norm + ".tsv"
+                    else:
+                        mw_path = "out/r/tidy_featureCounts/subread/featureCounts_-p_-O_-t_exon_-g_merge_gene_id_name_gtf-" + assembly + "-merge-attr-retrieve-ensembl_" + bam_id + "_" + norm + ".tsv"
+                    for stem in ["tgml/all_samples/", "tgml/by_type_and_exp/RNA/" + rna_exp_str + "/"]:
+                        id_suffix = stem + assembly + "-merge-attr-retrieve/counts/" + rna_exp_str + "_" + norm + ".tsv"
+                        mwconf['ids'][id_suffix] = mw_path
+                        
+                        if rna_exp_str in rna_exps_to_process:
                             ln_path = "out/ln/alias/" + id_suffix
                             mwconf['targets'].append(ln_path)
 
@@ -482,12 +498,12 @@ else:
                         mwconf["targets"].append(ln_rseqc_tin_path)
 
 
-    projects = samples[(samples['Process'].isin(['yes','done'])) & (samples['Project'] != '')].Project.unique()
+    projects = samples[(samples['Process'].isin(['yes'])) & (samples['Project'] != '')].Project.unique()
     for project in projects:
         if(numpy.isnan(project)):
             continue
         else:
-            project_samples = samples[(samples['Process'].isin(['yes','done'])) & (samples['Project'] == project)]
+            project_samples = samples[(samples['Process'].isin(['yes'])) & (samples['Project'] == project)]
 
             if len(project_samples.Specie.unique()) > 1:
                 eprint('More than one specie for this project ' + str(project_samples) + '. There is likely an error in your Sequencing_summary.xlsx.')
