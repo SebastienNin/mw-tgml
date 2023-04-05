@@ -96,6 +96,34 @@ else:
                     fq_to_rename_1 = "out/cat/" + id_cat_1
                     fq_to_rename_2 = "out/cat/" + id_cat_2
 
+            # Output from the NextSeq2000. It generates concatenated fastq files using bclconvert
+            elif str(row['Origin']) == 'NS2000':
+                if SE_OR_PE == "se":
+                    # On the NextSeq2000, '-' are forbidden. I added a replace to "_" just in case but the sequencer should show a warning before launching the run.
+                    fq_to_cat = [ACCESSION + "/" + SAMPLE_NAME + "_S" + str(int(row['Sample_Well'])) + "_R1_001.fastq.gz"]
+                    id_cat = "merge-nexsteq2000-se/" + SAMPLE_NAME + '.fastq.gz'
+                    mwconf['ids'][id_cat] = fq_to_cat
+                    fq_to_rename = "out/cat/" + id_cat
+
+                if SE_OR_PE == 'pe':
+                    fq_to_cat_1 = [ACCESSION + "/" + SAMPLE_NAME + "_S" + str(int(row['Sample_Well'])) + "_R1_001.fastq.gz"]
+                    fq_to_cat_2 = [ACCESSION + "/" + SAMPLE_NAME + "_S" + str(int(row['Sample_Well'])) + "_R2_001.fastq.gz"]
+                    id_cat_1 = "merge-nexsteq2000-pe/" + SAMPLE_NAME + '_1.fastq.gz'
+                    id_cat_2 = "merge-nexsteq2000-pe/" + SAMPLE_NAME + '_2.fastq.gz'
+                    mwconf['ids'][id_cat_1] = str(fq_to_cat_1)
+                    mwconf['ids'][id_cat_2] = str(fq_to_cat_2)
+                    fq_to_rename_1 = "out/cat/" + str(id_cat_1)
+                    fq_to_rename_2 = "out/cat/" + str(id_cat_2)
+
+            # Process NS2000 BCL. Generate concatenated FASTQ files
+            elif(row['Origin']) in ['bcl_NS2000_p1p2', 'bcl_NS2000_p3']:
+                bcl_prefix = "out/bcl-convert/_--force/" + ACCESSION + "/" + str(row["Sample_Name"]) + "_S" + str(int(row["Sample_Well"])) + "_L001"
+                if SE_OR_PE == 'se':
+                    fq_to_rename = bcl_prefix + "_R1_001.fastq.gz"
+                elif SE_OR_PE == 'pe':
+                    fq_to_rename_1 = bcl_prefix + "_R1_001.fastq.gz"
+                    fq_to_rename_2 = bcl_prefix + "_R2_001.fastq.gz"
+
             # Process bcl files from NextSeq500. Output are NOT splitted by lane and fastq files for indexes are generated
             elif(str(row['Origin']) in ['bcl', 'bcl_no_mismatch'] and str(row['Type']) not in ['scRNA-seq', 'Cellplex', 'snRNA-seq']):
                 if(str(row['Origin']) in ['bcl']):
@@ -439,7 +467,14 @@ else:
         rna_exp_str = str(int(rna_exp_float))
         rna_exp_samples = samples[(samples['Process'].isin(['yes'])) & (samples['Run'] == rna_exp) & samples['Analysis_type'].isin(['Demultiplexage_Concatenation_Quantification_QC', 'Concatenation_Quantification_QC'])]
 
+        if len(rna_exp_samples) == 0:
+            continue
         lib_type = rna_exp_samples["Se_or_Pe"]
+
+        print(rna_exp_samples)
+        print(len(rna_exp_samples.Specie.unique()))
+        print(rna_exp_samples.Specie.unique())
+
         if len(rna_exp_samples.Specie.unique()) > 1:
             eprint('More than one specie for this RNA experiment ' + str(rna_exp) + '. Analysis steps involving all the samples from this experiment are skipped. There is likely an error in your Sequencing_summary.xlsx')
         elif len(rna_exp_samples.Specie.unique()) == 0 :
@@ -493,10 +528,8 @@ else:
                     rseqc_tin_path = "rseqc/tin_bam_list_bed-housekeeping-genes-" + assembly + "/" + bam_list_id + ".summary.txt"
                     ln_rseqc_tin_path = "out/" + rseqc_tin_path
 
-                    if rna_exp in rna_exps_to_process:
-                        mwconf["targets"].append(ln_rseqc_genecov_path)
-                        mwconf["targets"].append(ln_rseqc_tin_path)
-
+                    mwconf["targets"].append(ln_rseqc_genecov_path)
+                    mwconf["targets"].append(ln_rseqc_tin_path)
 
     projects = samples[(samples['Process'].isin(['yes'])) & (samples['Project'] != '')].Project.unique()
     for project in projects:
