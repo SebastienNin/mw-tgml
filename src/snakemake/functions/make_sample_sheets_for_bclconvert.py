@@ -34,7 +34,7 @@ if os.path.isfile("../mw-tgml/Sequencing_summary.xlsx"):
 
     experiments_from_bcl = samples_from_bcl.Accession.unique()
 
-    mwconf['bcl2fastq_targets'] = []
+    mwconf['bclconvert_targets'] = []
 
     for experiment in experiments_from_bcl:
         # Variable to get the loop dataframe
@@ -161,4 +161,4 @@ if os.path.isfile("../mw-tgml/Sequencing_summary.xlsx"):
         # Add a condition to read the process column of the summary.
         # Sometimes, we may not want to run bcl2fastq.
         if current_df[['Process']].iloc[0,0] == "yes":
-            mwconf['bcl2fastq_targets'].append(bclconvert_target)
+            mwconf['bclconvert_targets'].append(bclconvert_target)

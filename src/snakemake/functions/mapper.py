@@ -471,10 +471,6 @@ else:
             continue
         lib_type = rna_exp_samples["Se_or_Pe"]
 
-        print(rna_exp_samples)
-        print(len(rna_exp_samples.Specie.unique()))
-        print(rna_exp_samples.Specie.unique())
-
         if len(rna_exp_samples.Specie.unique()) > 1:
             eprint('More than one specie for this RNA experiment ' + str(rna_exp) + '. Analysis steps involving all the samples from this experiment are skipped. There is likely an error in your Sequencing_summary.xlsx')
         elif len(rna_exp_samples.Specie.unique()) == 0 :

@@ -32,6 +32,7 @@ if os.path.isfile("../mw-tgml/Sequencing_summary.xlsx"):
 
     experiments_from_bcl = samples_from_bcl.Accession.unique()
 
+    # Check si mwconf[bcl2fastq target] existe
     mwconf['bcl2fastq_targets'] = []
 
     for experiment in experiments_from_bcl:

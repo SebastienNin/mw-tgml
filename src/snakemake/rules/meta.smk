@@ -8,3 +8,5 @@ rule config_qc_targets:
 rule config_blc2fastq_targets:
     input: mwconf['bcl2fastq_targets']
 
+rule config_bclconvert_targets:
+    input: mwconf['bclconvert_targets']
