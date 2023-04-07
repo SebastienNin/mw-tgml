@@ -39,48 +39,16 @@ if os.path.isfile("../mw-tgml/Sequencing_summary.xlsx"):
     for experiment in experiments_from_bcl:
         # Variable to get the loop dataframe
         current_df = samples_from_bcl.loc[samples['Accession'] == experiment]
+        # Do not process single-cell and nuclei assays here
+        if(['scRNA-seq', 'scRNA_HTO', 'Cellplex', 'snRNA-seq'] in current_df.Type.unique()):
+            continue
         current_df.rename({'Run_Name' : 'Sample_Project'}, axis=1, inplace=True)
         kit_used = current_df.Kit_index.unique()[0]
 
-        # Condition to determine wether data are single-cell and single or double indexed
-        if(['scRNA-seq', 'scRNA_HTO', 'Cellplex'] in current_df.Type.unique()):
-            bclconvert_prefix = "out/cellranger/mkfastq/" + experiment
-            bclconvert_target = bclconvert_prefix + "/Reports/html/tree.html"
-            # 8/10/2021 Add fillna to correct an error where I5_Index_ID = NaN but is not detected by str(row['I5_Index_ID']) != "NaN"
-            # fillna replace all na by ""
-            #data_tmp = current_df[['Sample_ID','Sample_Name','Sample_Plate','Sample_Well','Index_10X','I7_Index_ID','Index', 'I5_Index_ID', 'Index2', 'Run_Name','Description']].fillna("")
-            data_tmp = current_df[['sample_name','Sample_ID','Sample_Name','Index_10X','I7_Index_ID','Index', 'I5_Index_ID', 'Index2', 'Sample_Project','Description']].fillna("")
-            # 2021 04 07 Update to enable dual indexing demultiplexing. Cellranger can read index name and will replace it by the index sequence. It also detect dual index or single index.
-            # 2021-04-23 Update the conditions to detect if samples have double index or not.
-            for index, row in data_tmp.iterrows():
-                if row['Index_10X'] == "yes":
-                    mRNA_index=index
-                    index_name=row["I7_Index_ID"]
-                    data_tmp.at[mRNA_index, "Index"] = index_name
-                    if(str(row['I5_Index_ID']) != ""):
-                        data_tmp.at[mRNA_index, "I5_Index_ID"] = index_name
-                        data_tmp.at[mRNA_index, "Index2"] = index_name
-                        data_dropped = data_tmp.drop(columns=["Index_10X"])
-                    else:
-                        data_dropped = data_tmp.drop(columns=["Index_10X", "I5_Index_ID", "Index2"])
-                elif(str(row['I5_Index_ID']) == ''):
-                    data_dropped = data_tmp.drop(columns=["Index_10X", "I5_Index_ID", "Index2"])
-                else:
-                    data_dropped = data_tmp.drop(columns=["Index_10X"])
-            data = data_dropped
-        #elif(['bcl_no_mismatch'] in current_df.Origin.unique()):
-            #bcl2fastq_prefix = "out/bcl2fastq/_--no-lane-splitting_--barcode-mismatches_0/" + experiment
-            #bcl2fastq_target = bcl2fastq_prefix + "/Reports/html/tree.html"
-            #data = current_df[['Sample_ID','Sample_Name','Sample_Plate','Sample_Well','I7_Index_ID','Index','I5_Index_ID','Index2','Run_Name','Description']]
-            #data = current_df[['Sample_ID','Sample_Name','I7_Index_ID','Index','I5_Index_ID','Index2','Run_Name','Description']]
-            #data = current_df[['Sample_ID','Sample_Name','I7_Index_ID','Index','I5_Index_ID','Index2','Sample_Project','Description']]
-        else:
-            # By default, create the fastq for index reads! Important to use when debugging!
-            bclconvert_prefix = "out/bcl-convert/_--force/" + experiment
-            bclconvert_target = bclconvert_prefix + "/Logs/FastqComplete.txt"
-            #data = current_df[['Sample_ID','Sample_Name','Sample_Plate','Sample_Well','I7_Index_ID','Index','I5_Index_ID','Index2','Run_Name','Description']]
-            #data = current_df[['Sample_ID','Sample_Name','I7_Index_ID','Index','I5_Index_ID','Index2','Run_Name','Description']]
-            data = current_df[['sample_name','Sample_ID','Sample_Name','I7_Index_ID','Index','I5_Index_ID','Index2', 'Sample_Project','Description']]
+        # By default, create the fastq for index reads! Important to use when debugging!
+        bclconvert_prefix = "out/bcl-convert/_--force/" + experiment
+        bclconvert_target = bclconvert_prefix + "/Logs/FastqComplete.txt"
+        data = current_df[['sample_name','Sample_ID','Sample_Name','I7_Index_ID','Index','I5_Index_ID','Index2', 'Sample_Project','Description']]
         # Sort by index to prevent trouble with mix of ID and numbers
         data_to_write = data[['sample_name','Index','Index2']]
         data_to_write = data_to_write.rename(columns={'sample_name':'Sample_ID', 'Index':'Index', 'Index2':'Index2'})

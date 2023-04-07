@@ -117,7 +117,7 @@ else:
 
             # Process NS2000 BCL. Generate concatenated FASTQ files
             elif(row['Origin']) in ['bcl_NS2000_p1p2', 'bcl_NS2000_p3']:
-                bcl_prefix = "out/bcl-convert/_--force/" + ACCESSION + "/" + str(row["Sample_Name"]) + "_S" + str(int(row["Sample_Well"])) + "_L001"
+                bcl_prefix = "out/bcl-convert/_--force" + ACCESSION + "/" + str(row["Sample_ID"]) + "_" + str(row["Sample_Name"]) + "_S" + str(int(row["Sample_Well"])) + "_L001"
                 if SE_OR_PE == 'se':
                     fq_to_rename = bcl_prefix + "_R1_001.fastq.gz"
                 elif SE_OR_PE == 'pe':

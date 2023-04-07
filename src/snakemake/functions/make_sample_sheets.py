@@ -18,7 +18,7 @@ from pathlib import Path
 if os.path.isfile("../mw-tgml/Sequencing_summary.xlsx"):
     samples = pandas.read_excel("../mw-tgml/Sequencing_summary.xlsx", sheet_name="samples", engine="openpyxl")
     samples_process_yes = samples[samples['Process'] == "yes"]
-    samples_from_bcl = samples_process_yes[samples_process_yes['Origin'].isin(['bcl', 'bcl_no_mismatch', 'bcl_index_generation'])]
+    samples_from_bcl = samples_process_yes[samples_process_yes['Origin'].isin(['bcl', 'bcl_no_mismatch', 'bcl_index_generation', 'bcl_NS2000_p1p2', 'bcl_NS2000_p3'])]
     # Add adapter file reading and dictionnary creation to add adapter sequences in the samplesheet.
     if os.path.isfile("../mw-tgml/src/snakemake/tables/adapter.tsv"):
         adapter_dict = {}
@@ -42,7 +42,7 @@ if os.path.isfile("../mw-tgml/Sequencing_summary.xlsx"):
         kit_used = current_df.Kit_index.unique()[0]
 
         # Condition to determine wether data are single or double indexed
-        if(['scRNA-seq', 'scRNA_HTO', 'Cellplex'] in current_df.Type.unique()):
+        if(['scRNA-seq', 'scRNA_HTO', 'Cellplex', 'snRNA-seq'] in current_df.Type.unique()):
             bcl2fastq_prefix = "out/cellranger/mkfastq/" + experiment
             bcl2fastq_target = bcl2fastq_prefix + "/Reports/html/tree.html"
             # 8/10/2021 Add fillna to correct an error where I5_Index_ID = NaN but is not detected by str(row['I5_Index_ID']) != "NaN"
@@ -67,6 +67,8 @@ if os.path.isfile("../mw-tgml/Sequencing_summary.xlsx"):
                 else:
                     data_dropped = data_tmp.drop(columns=["Index_10X"])
             data = data_dropped
+        elif(['bcl_NS2000_p1p2', 'bcl_NS2000_p3'] in current_df.Origin.unique()):
+            continue
         elif(['bcl_no_mismatch'] in current_df.Origin.unique()):
             bcl2fastq_prefix = "out/bcl2fastq/_--no-lane-splitting_--barcode-mismatches_0/" + experiment
             bcl2fastq_target = bcl2fastq_prefix + "/Reports/html/tree.html"
