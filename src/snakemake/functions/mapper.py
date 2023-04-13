@@ -116,13 +116,42 @@ else:
                     fq_to_rename_2 = "out/cat/" + str(id_cat_2)
 
             # Process NS2000 BCL. Generate concatenated FASTQ files
-            elif(row['Origin']) in ['bcl_NS2000_p1p2', 'bcl_NS2000_p3']:
+            elif(row['Origin'] in ['bcl_NS2000_p1p2', 'bcl_NS2000_p3'] and str(row['Type']) not in ['scRNA-seq', 'Cellplex', 'snRNA-seq']):
                 bcl_prefix = "out/bcl-convert/_--force" + ACCESSION + "/" + str(row["Sample_ID"]) + "_" + str(row["Sample_Name"]) + "_S" + str(int(row["Sample_Well"])) + "_L001"
                 if SE_OR_PE == 'se':
                     fq_to_rename = bcl_prefix + "_R1_001.fastq.gz"
                 elif SE_OR_PE == 'pe':
                     fq_to_rename_1 = bcl_prefix + "_R1_001.fastq.gz"
                     fq_to_rename_2 = bcl_prefix + "_R2_001.fastq.gz"
+
+            # Process NS2000 BCL. Generate concatenated FASTQ files
+            elif(row['Origin'] in ['bcl_NS2000_p1p2', 'bcl_NS2000_p3'] and str(row['Type']) in ['scRNA-seq', 'Cellplex', 'snRNA-seq']):
+                bcl_prefix = "out/cellranger/mkfastq/" + ACCESSION + "/" + "_".join(str(row['Run_Name']).split("_")[0:2]) + "/outs/fastq_path/" + str(row['Run_Name']) + "/" + str(row["Sample_ID"]) + "/" + str(row["Sample_Name"])  + "_S" + str(int(row["Sample_Well"]))
+                bcl_prefix = bcl_prefix.replace('//','/')
+
+                # scRNA-seq can't be se, if SE_OR_PE == 'se', throw an error
+                if SE_OR_PE == 'se':
+                    sys.exit("scRNA-seq can't be single-end! Please check the excel file.")
+                elif SE_OR_PE == 'pe':
+                    if row['Origin'] in ['bcl_NS2000_p1p2']:
+                        fq_to_cat_1 = bcl_prefix + "_L001_R1_001.fastq.gz"
+                        fq_to_cat_2 = bcl_prefix + "_L001_R2_001.fastq.gz"
+                        id_cat_1 = "merge-nexsteq500-pe/" + SAMPLE_NAME + '_1.fastq.gz'
+                        id_cat_2 = "merge-nexsteq500-pe/" + SAMPLE_NAME + '_2.fastq.gz'
+                        mwconf['ids'][id_cat_1] = str(fq_to_cat_1)
+                        mwconf['ids'][id_cat_2] = str(fq_to_cat_2)
+                        fq_to_rename_1 = "out/cat/" + id_cat_1
+                        fq_to_rename_2 = "out/cat/" + id_cat_2
+                    else:
+                        fq_to_cat_1 = [bcl_prefix + "_L00" + str(n) + "_R1_001.fastq.gz" for n in range(1,3)]
+                        fq_to_cat_2 = [bcl_prefix + "_L00" + str(n) + "_R2_001.fastq.gz" for n in range(1,3)]
+                        id_cat_1 = "merge-nexsteq500-pe/" + SAMPLE_NAME + '_1.fastq.gz'
+                        id_cat_2 = "merge-nexsteq500-pe/" + SAMPLE_NAME + '_2.fastq.gz'
+                        mwconf['ids'][id_cat_1] = str(fq_to_cat_1)
+                        mwconf['ids'][id_cat_2] = str(fq_to_cat_2)
+                        fq_to_rename_1 = "out/cat/" + id_cat_1
+                        fq_to_rename_2 = "out/cat/" + id_cat_2
+
 
             # Process bcl files from NextSeq500. Output are NOT splitted by lane and fastq files for indexes are generated
             elif(str(row['Origin']) in ['bcl', 'bcl_no_mismatch'] and str(row['Type']) not in ['scRNA-seq', 'Cellplex', 'snRNA-seq']):
@@ -141,7 +170,6 @@ else:
             # Add case for scrna_bcl
             elif(str(row['Origin']) == 'bcl' and str(row['Type']) in ['scRNA-seq', 'Cellplex', 'snRNA-seq']):
                 bcl_prefix = "out/cellranger/mkfastq/" + ACCESSION + "/" + "_".join(str(row['Run_Name']).split("_")[0:2]) + "/outs/fastq_path/" + str(row['Run_Name']) + "/" + str(row["Sample_ID"]) + "/" + str(row["Sample_Name"])  + "_S" + str(int(row["Sample_Well"]))
-                #bcl_prefix = "out/cellranger/mkfastq/" + ACCESSION + "/" + "_".join(str(row['Run_Name']).split("_")[0:2]) + "/outs/fastq_path/" + str(row["Sample_Name"])  + "_S" + str(int(row["Sample_Well"]))
                 bcl_prefix = bcl_prefix.replace('//','/')
 
                 # scRNA-seq can't be se, if SE_OR_PE == 'se', throw an error
@@ -364,7 +392,7 @@ else:
 
                             #ln_aligned_unspecif_paths.append(ln_rseqc_path)
 
-                        if PROCESS == 'yes' and row['Type'] not in [ 'scRNA-seq', 'Cellplex']:
+                        if PROCESS == 'yes' and row['Type'] not in ['scRNA-seq', 'Cellplex', 'snRNA-seq']:
                             mwconf['targets'].append(ln_aligned_unspecif_paths)
 
                     # (7
