@@ -40,7 +40,7 @@ if os.path.isfile("../mw-tgml/Sequencing_summary.xlsx"):
         # Variable to get the loop dataframe
         current_df = samples_from_bcl.loc[samples['Accession'] == experiment]
         # Do not process single-cell and nuclei assays here
-        if(['scRNA-seq', 'scRNA_HTO', 'Cellplex', 'snRNA-seq'] in current_df.Type.unique()):
+        if(['scRNA-seq', 'scRNA_HTO', 'Cellplex', 'snRNA-seq', 'snATAC-seq'] in current_df.Type.unique()):
             continue
         current_df.rename({'Run_Name' : 'Sample_Project'}, axis=1, inplace=True)
         kit_used = current_df.Kit_index.unique()[0]
