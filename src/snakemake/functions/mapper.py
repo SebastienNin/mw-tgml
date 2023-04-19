@@ -623,7 +623,7 @@ else:
                 RUN = str(int(project_samples['Run'].unique()[0]))
                 # Checking specie to process.
                 # For now, on the platform we process only human and mouse.
-                if samples['Type'].unique() in ['snATAC-seq']:
+                if project_samples['Type'].unique() == ['snATAC-seq']:
                     if SPECIE in ['human', 'Human', 'Homo_sapiens']:
                         scrna_assembly = "GRCh38-2020-A-2.0.0"
                     elif SPECIE in ['mouse', 'Mouse', 'Mus_musculus']:
