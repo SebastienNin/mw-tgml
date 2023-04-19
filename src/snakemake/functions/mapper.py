@@ -67,8 +67,6 @@ else:
                     fq_to_rename = "out/cat/" + id_cat
 
                 if SE_OR_PE == 'pe':
-                    #fq_to_cat_1 = [ACCESSION + "_L00" + str(n) + "_R1_001.fastq.gz" for n in range(1,5)]
-                    #fq_to_cat_2 = [ACCESSION + "_L00" + str(n) + "_R2_001.fastq.gz" for n in range(1,5)]
                     fq_to_cat_1 = [ACCESSION + "/" + SAMPLE_NAME.replace("_", "-") + "_S" + str(int(row['Sample_Well'])) + "_L00" + str(n) + "_R1_001.fastq.gz" for n in range(1,5)]
                     fq_to_cat_2 = [ACCESSION + "/" + SAMPLE_NAME.replace("_", "-") + "_S" + str(int(row['Sample_Well'])) + "_L00" + str(n) + "_R2_001.fastq.gz" for n in range(1,5)]
                     id_cat_1 = "merge-nexsteq500-pe/" + SAMPLE_NAME + '_1.fastq.gz'
@@ -99,7 +97,6 @@ else:
             # Output from the NextSeq2000. It generates concatenated fastq files using bclconvert
             elif str(row['Origin']) == 'NS2000':
                 if SE_OR_PE == "se":
-                    # On the NextSeq2000, '-' are forbidden. I added a replace to "_" just in case but the sequencer should show a warning before launching the run.
                     fq_to_cat = [ACCESSION + "/" + SAMPLE_NAME + "_S" + str(int(row['Sample_Well'])) + "_R1_001.fastq.gz"]
                     id_cat = "merge-nexsteq2000-se/" + SAMPLE_NAME + '.fastq.gz'
                     mwconf['ids'][id_cat] = fq_to_cat
@@ -116,7 +113,7 @@ else:
                     fq_to_rename_2 = "out/cat/" + str(id_cat_2)
 
             # Process NS2000 BCL. Generate concatenated FASTQ files
-            elif(row['Origin'] in ['bcl_NS2000_p1p2', 'bcl_NS2000_p3'] and str(row['Type']) not in ['scRNA-seq', 'Cellplex', 'snRNA-seq']):
+            elif(row['Origin'] in ['bcl_NS2000_p1p2', 'bcl_NS2000_p3'] and str(row['Type']) not in ['scRNA-seq', 'Cellplex', 'snRNA-seq', 'snATAC-seq']):
                 bcl_prefix = "out/bcl-convert/_--force" + ACCESSION + "/" + str(row["Sample_ID"]) + "_" + str(row["Sample_Name"]) + "_S" + str(int(row["Sample_Well"])) + "_L001"
                 if SE_OR_PE == 'se':
                     fq_to_rename = bcl_prefix + "_R1_001.fastq.gz"
@@ -125,8 +122,13 @@ else:
                     fq_to_rename_2 = bcl_prefix + "_R2_001.fastq.gz"
 
             # Process NS2000 BCL. Generate concatenated FASTQ files
-            elif(row['Origin'] in ['bcl_NS2000_p1p2', 'bcl_NS2000_p3'] and str(row['Type']) in ['scRNA-seq', 'Cellplex', 'snRNA-seq']):
-                bcl_prefix = "out/cellranger/mkfastq/" + ACCESSION + "/" + "_".join(str(row['Run_Name']).split("_")[0:2]) + "/outs/fastq_path/" + str(row['Run_Name']) + "/" + str(row["Sample_ID"]) + "/" + str(row["Sample_Name"])  + "_S" + str(int(row["Sample_Well"]))
+            elif(row['Origin'] in ['bcl_NS2000_p1p2', 'bcl_NS2000_p3'] and str(row['Type']) in ['scRNA-seq', 'Cellplex', 'snRNA-seq', 'snATAC-seq']):
+                if(str(row['Type']) in ['scRNA-seq', 'Cellplex', 'snRNA-seq']):
+                    bcl_prefix = "out/cellranger/mkfastq/" + ACCESSION + "/" + "_".join(str(row['Run_Name']).split("_")[0:2]) + "/outs/fastq_path/" + str(row['Run_Name']) + "/" + str(row["Sample_ID"]) + "/" + str(row["Sample_Name"])  + "_S" + str(int(row["Sample_Well"]))
+                elif(str(row['Type']) in ['snATAC-seq']):
+                    bcl_prefix = "out/cellranger-atac/mkfastq/" + ACCESSION + "/" + "_".join(str(row['Run_Name']).split("_")[0:2]) + "/outs/fastq_path/" + str(row['Run_Name']) + "/" + str(row["Sample_ID"]) + "/" + str(row["Sample_Name"])  + "_S" + str(int(row["Sample_Well"]))
+                else:
+                    bcl_prefix = "out/cellranger/mkfastq/" + ACCESSION + "/" + "_".join(str(row['Run_Name']).split("_")[0:2]) + "/outs/fastq_path/" + str(row['Run_Name']) + "/" + str(row["Sample_ID"]) + "/" + str(row["Sample_Name"])  + "_S" + str(int(row["Sample_Well"]))
                 bcl_prefix = bcl_prefix.replace('//','/')
 
                 # scRNA-seq can't be se, if SE_OR_PE == 'se', throw an error
@@ -154,7 +156,7 @@ else:
 
 
             # Process bcl files from NextSeq500. Output are NOT splitted by lane and fastq files for indexes are generated
-            elif(str(row['Origin']) in ['bcl', 'bcl_no_mismatch'] and str(row['Type']) not in ['scRNA-seq', 'Cellplex', 'snRNA-seq']):
+            elif(str(row['Origin']) in ['bcl', 'bcl_no_mismatch'] and str(row['Type']) not in ['scRNA-seq', 'Cellplex', 'snRNA-seq', 'snATAC-seq']):
                 if(str(row['Origin']) in ['bcl']):
                     bcl_prefix = "out/bcl2fastq/_--no-lane-splitting_--create-fastq-for-index-reads/" + ACCESSION + "/" + str(row['Run_Name']) + "/" + str(row["Sample_ID"]) + "/" + str(row["Sample_Name"]) + "_S" + str(int(row["Sample_Well"]))
                 else:
@@ -168,8 +170,13 @@ else:
                     fq_to_rename_2 = bcl_prefix + "_R2_001.fastq.gz"
 
             # Add case for scrna_bcl
-            elif(str(row['Origin']) == 'bcl' and str(row['Type']) in ['scRNA-seq', 'Cellplex', 'snRNA-seq']):
-                bcl_prefix = "out/cellranger/mkfastq/" + ACCESSION + "/" + "_".join(str(row['Run_Name']).split("_")[0:2]) + "/outs/fastq_path/" + str(row['Run_Name']) + "/" + str(row["Sample_ID"]) + "/" + str(row["Sample_Name"])  + "_S" + str(int(row["Sample_Well"]))
+            elif(str(row['Origin']) == 'bcl' and str(row['Type']) in ['scRNA-seq', 'Cellplex', 'snRNA-seq', 'snATAC-seq']):
+                if(str(row['Type']) in ['scRNA-seq', 'Cellplex', 'snRNA-seq']):
+                    bcl_prefix = "out/cellranger/mkfastq/" + ACCESSION + "/" + "_".join(str(row['Run_Name']).split("_")[0:2]) + "/outs/fastq_path/" + str(row['Run_Name']) + "/" + str(row["Sample_ID"]) + "/" + str(row["Sample_Name"])  + "_S" + str(int(row["Sample_Well"]))
+                elif(str(row['Type']) in ['snATAC-seq']):
+                    bcl_prefix = "out/cellranger-atac/mkfastq/" + ACCESSION + "/" + "_".join(str(row['Run_Name']).split("_")[0:2]) + "/outs/fastq_path/" + str(row['Run_Name']) + "/" + str(row["Sample_ID"]) + "/" + str(row["Sample_Name"])  + "_S" + str(int(row["Sample_Well"]))
+                else:
+                    bcl_prefix = "out/cellranger/mkfastq/" + ACCESSION + "/" + "_".join(str(row['Run_Name']).split("_")[0:2]) + "/outs/fastq_path/" + str(row['Run_Name']) + "/" + str(row["Sample_ID"]) + "/" + str(row["Sample_Name"])  + "_S" + str(int(row["Sample_Well"]))
                 bcl_prefix = bcl_prefix.replace('//','/')
 
                 # scRNA-seq can't be se, if SE_OR_PE == 'se', throw an error
@@ -392,7 +399,7 @@ else:
 
                             #ln_aligned_unspecif_paths.append(ln_rseqc_path)
 
-                        if PROCESS == 'yes' and row['Type'] not in ['scRNA-seq', 'Cellplex', 'snRNA-seq']:
+                        if PROCESS == 'yes' and row['Type'] not in ['scRNA-seq', 'Cellplex', 'snRNA-seq', 'snATAC-seq']:
                             mwconf['targets'].append(ln_aligned_unspecif_paths)
 
                     # (7
@@ -599,7 +606,7 @@ else:
                     mwconf['ids'][merged_bed_broad_id] = merged_bed_broad_path
 
     # Processing of single-cell RNA-seq
-    scRNA_samples = samples[(samples['Process'].isin(['yes'])) & (samples['Type'].isin(['scRNA-seq', 'snRNA-seq']))].Run_Name.unique()
+    scRNA_samples = samples[(samples['Process'].isin(['yes'])) & (samples['Type'].isin(['scRNA-seq', 'snRNA-seq', 'snATAC-seq']))].Run_Name.unique()
     for scRNA_project in scRNA_samples:
         project_samples = samples[(samples['Process'].isin(['yes'])) & (samples['Run_Name'] == scRNA_project)]
         # Run cellranger count on cellranger mkfastq output
@@ -616,16 +623,25 @@ else:
                 RUN = str(int(project_samples['Run'].unique()[0]))
                 # Checking specie to process.
                 # For now, on the platform we process only human and mouse.
-                if SPECIE in ['human', 'Human', 'Homo_sapiens']:
-                    scrna_assembly = "GRCh38-2020-A"
-                elif SPECIE in ['mouse', 'Mouse', 'Mus_musculus']:
-                    scrna_assembly = "mm10-2020-A"
+                if project_samples['Type'].unique() == ['snATAC-seq']:
+                    if SPECIE in ['human', 'Human', 'Homo_sapiens']:
+                        scrna_assembly = "GRCh38-2020-A-2.0.0"
+                    elif SPECIE in ['mouse', 'Mouse', 'Mus_musculus']:
+                        scrna_assembly = "mm10-2020-A-2.0.0"
+                    else:
+                        continue
+                    cellranger_count_target = "out/cellranger-atac/count_--sample_" + SAMPLE + "_" + scrna_assembly + "/cellranger-atac/mkfastq" + ACCESSION + "/process_done"
                 else:
-                    continue
-                cellranger_count_target = "out/cellranger/count_--sample_" + SAMPLE + "_" + scrna_assembly + "/cellranger/mkfastq" + ACCESSION + "/process_done"
+                    if SPECIE in ['human', 'Human', 'Homo_sapiens']:
+                        scrna_assembly = "GRCh38-2020-A"
+                    elif SPECIE in ['mouse', 'Mouse', 'Mus_musculus']:
+                        scrna_assembly = "mm10-2020-A"
+                    else:
+                        continue
+                    cellranger_count_target = "out/cellranger/count_--sample_" + SAMPLE + "_" + scrna_assembly + "/cellranger/mkfastq" + ACCESSION + "/process_done"
                 # Test to add ln for cellranger
-                cellranger_count_prefix = "/cellranger/count_--sample_" + SAMPLE + "_" + scrna_assembly + "/cellranger/mkfastq" + ACCESSION
-                ln_cellranger_count = "out/ln/alias/tgml/by_run/run" + RUN + cellranger_count_prefix
+                #cellranger_count_prefix = "/cellranger/count_--sample_" + SAMPLE + "_" + scrna_assembly + "/cellranger/mkfastq" + ACCESSION
+                #ln_cellranger_count = "out/ln/alias/tgml/by_run/run" + RUN + cellranger_count_prefix
                 if PROCESS == 'yes':
                     mwconf['targets'].append(cellranger_count_target)
                     #mwconf['targets'].append(ln_cellranger_count)

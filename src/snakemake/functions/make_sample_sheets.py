@@ -42,8 +42,11 @@ if os.path.isfile("../mw-tgml/Sequencing_summary.xlsx"):
         kit_used = current_df.Kit_index.unique()[0]
 
         # Condition to determine wether data are single or double indexed
-        if(['scRNA-seq', 'scRNA_HTO', 'Cellplex', 'snRNA-seq'] in current_df.Type.unique()):
-            bcl2fastq_prefix = "out/cellranger/mkfastq/" + experiment
+        if(['scRNA-seq', 'scRNA_HTO', 'Cellplex', 'snRNA-seq', 'snATAC-seq'] in current_df.Type.unique()):
+            if(['snATAC-seq'] in current_df.Type.unique()):
+                bcl2fastq_prefix = "out/cellranger-atac/mkfastq/" + experiment
+            else:
+                bcl2fastq_prefix = "out/cellranger/mkfastq/" + experiment
             bcl2fastq_target = bcl2fastq_prefix + "/Reports/html/tree.html"
             # 8/10/2021 Add fillna to correct an error where I5_Index_ID = NaN but is not detected by str(row['I5_Index_ID']) != "NaN"
             # fillna replace all na by ""
@@ -117,7 +120,7 @@ if os.path.isfile("../mw-tgml/Sequencing_summary.xlsx"):
                 #'AdapterRead2,' + adapter_dict[kit_used][1] + '\n\n'
                 #'[Data]\n')
 
-        if(['scRNA-seq', 'snRNA-seq', 'Cellplex'] not in current_df.Type.unique()):
+        if(['scRNA-seq', 'snRNA-seq', 'Cellplex', 'snATAC-seq'] not in current_df.Type.unique()):
             adapter_content=('[Settings]\n'
          'Adapter,' + adapter_dict[kit_used][0] + '\n'
          'AdapterRead2,' + adapter_dict[kit_used][1] + '\n\n'
