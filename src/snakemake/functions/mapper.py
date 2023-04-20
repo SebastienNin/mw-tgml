@@ -136,8 +136,8 @@ else:
                     sys.exit("scRNA-seq can't be single-end! Please check the excel file.")
                 elif SE_OR_PE == 'pe':
                     if row['Origin'] in ['bcl_NS2000_p1p2']:
-                        fq_to_cat_1 = bcl_prefix + "_L001_R1_001.fastq.gz"
-                        fq_to_cat_2 = bcl_prefix + "_L001_R2_001.fastq.gz"
+                        fq_to_cat_1 = [bcl_prefix + "_L001_R1_001.fastq.gz"]
+                        fq_to_cat_2 = [bcl_prefix + "_L001_R2_001.fastq.gz"]
                         id_cat_1 = "merge-nexsteq500-pe/" + SAMPLE_NAME + '_1.fastq.gz'
                         id_cat_2 = "merge-nexsteq500-pe/" + SAMPLE_NAME + '_2.fastq.gz'
                         mwconf['ids'][id_cat_1] = str(fq_to_cat_1)
